@@ -76,7 +76,7 @@
               :src="userAvatar"
               mode="aspectFill"
             />
-            <Icon v-else name="user_fill" :size="14" color="#fff" />
+            <Icon v-else name="user" :size="14" color="#fff" />
           </view>
         </view>
         <view class="scroll-bottom-anchor" id="m-bottom" />

@@ -33,7 +33,7 @@
               mode="aspectFill"
             />
             <view v-else class="avatar avatar-placeholder">
-              <Icon name="user_fill" :size="30" color="#fff" />
+              <Icon name="user" :size="30" color="#fff" />
             </view>
             <view class="avatar-edit">
               <Icon name="camera" :size="12" color="#FF7E3D" />

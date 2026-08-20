@@ -20,7 +20,7 @@
         <view v-for="(img, idx) in localImages" :key="idx" class="image-item">
           <image class="preview-img" :src="img" mode="aspectFill" />
           <view class="img-delete" @click="removeImage(idx)">
-            <u-icon name="close-circle-fill" color="#FF4D4F" size="20" />
+            <u-icon name="close-circle" color="#FF4D4F" size="20" />
           </view>
         </view>
         <!-- 添加图片按钮 -->

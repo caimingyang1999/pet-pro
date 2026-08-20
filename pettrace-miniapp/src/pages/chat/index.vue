@@ -88,7 +88,7 @@
             :src="userAvatar"
             mode="aspectFill"
           />
-          <Icon v-else name="user_fill" :size="16" color="#fff" />
+          <Icon v-else name="user" :size="16" color="#fff" />
         </view>
       </view>
 

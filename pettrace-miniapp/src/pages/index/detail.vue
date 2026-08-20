@@ -38,7 +38,7 @@
       <!-- 点赞/评论数据 -->
       <view class="post-stats">
         <text class="stat-item" @click="showLikes">
-          <u-icon name="heart-fill" color="#FF8C42" size="14" />
+          <u-icon name="heart" color="#FF8C42" size="14" />
           {{ postDetail.likeCount || 0 }} 赞
         </text>
         <text class="stat-item">{{ postDetail.commentCount || 0 }} 评论</text>
@@ -134,7 +134,7 @@
           @confirm="submitComment"
         />
         <view v-if="replyTarget" class="cancel-reply" @click="cancelReply">
-          <u-icon name="close-circle-fill" color="#ccc" size="16" />
+          <u-icon name="close-circle" color="#ccc" size="16" />
         </view>
       </view>
       <view class="send-btn" @click="submitComment">
