@@ -1,0 +1,75 @@
+/**
+ * 宠迹主题变量
+ * 这里是uni-app内置的常用样式变量
+ */
+
+/* 主题色 */
+$u-primary: #FF7E3D;
+$u-primary-light: #FFB07C;
+$u-primary-dark: #E66A1A;
+
+/* 辅助色 */
+$u-success: #52C41A;
+$u-warning: #FAAD14;
+$u-error: #FF4D4F;
+$u-info: #1890FF;
+
+/* 文字色 */
+$u-main-color: #333333;
+$u-content-color: #666666;
+$u-tips-color: #999999;
+$u-light-color: #CCCCCC;
+
+/* 背景色 */
+$u-bg-color: #F5F5F5;
+$u-bg-color-white: #FFFFFF;
+
+/* 边框色 */
+$u-border-color: #EEEEEE;
+
+/* 宠迹自定义主题变量 */
+$pet-primary: #FF7E3D;
+$pet-primary-light: #FFF0E6;
+$pet-success: #67C23A;
+$pet-warning: #E6A23C;
+$pet-danger: #F56C6C;
+$pet-info: #909399;
+
+$pet-text-main: #303133;
+$pet-text-regular: #606266;
+$pet-text-secondary: #909399;
+$pet-text-placeholder: #C0C4CC;
+
+$pet-border: #DCDFE6;
+$pet-border-light: #E4E7ED;
+$pet-border-lighter: #EBEEF5;
+
+$pet-bg: #F5F7FA;
+$pet-bg-white: #FFFFFF;
+
+/* scss混入，用于快速设置圆角卡片 */
+@mixin pet-card {
+  background-color: $pet-bg-white;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+@mixin pet-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin pet-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin pet-multi-ellipsis($lines: 2) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: $lines;
+  overflow: hidden;
+}

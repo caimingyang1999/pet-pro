@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ShopProductMapper">
+
+    <resultMap type="com.ruoyi.system.domain.ShopProduct" id="ShopProductResult">
+        <id     property="id"             column="id"              />
+        <result property="categoryId"     column="category_id"     />
+        <result property="productName"    column="product_name"    />
+        <result property="productImages" column="product_images"  />
+        <result property="description"    column="description"     />
+        <result property="pointsPrice"    column="points_price"    />
+        <result property="stock"          column="stock"           />
+        <result property="totalExchange"  column="total_exchange"  />
+        <result property="status"         column="status"          />
+        <result property="delFlag"        column="del_flag"        />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateTime"     column="update_time"     />
+        <result property="categoryName"  column="category_name"   />
+    </resultMap>
+
+    <sql id="selectProductVo">
+        select sp.id, sp.category_id, sp.product_name, sp.product_images, sp.description,
+               sp.points_price, sp.stock, sp.total_exchange, sp.status, sp.del_flag,
+               sp.create_time, sp.update_time,
+               sc.category_name
+        from shop_product sp
+        left join shop_category sc on sp.category_id = sc.id
+    </sql>
+
+    <select id="selectProductList" resultMap="ShopProductResult">
+        <include refid="selectProductVo"/>
+        <where>
+            sp.del_flag = '0'
+            <if test="categoryId != null">
+                and sp.category_id = #{categoryId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                and sp.product_name like concat('%', #{keyword}, '%')
+            </if>
+        </where>
+        order by sp.create_time desc
+    </select>
+
+</mapper>

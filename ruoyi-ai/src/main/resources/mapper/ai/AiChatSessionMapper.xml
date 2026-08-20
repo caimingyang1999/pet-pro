@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.ai.mapper.AiChatSessionMapper">
+
+    <resultMap type="com.ruoyi.ai.domain.AiChatSession" id="AiChatSessionResult">
+        <id     property="id"            column="id"             />
+        <result property="userId"        column="user_id"        />
+        <result property="sessionTitle"  column="session_title"  />
+        <result property="sessionType"   column="session_type"   />
+        <result property="model"         column="model"          />
+        <result property="messageCount" column="message_count"  />
+        <result property="status"        column="status"         />
+        <result property="delFlag"       column="del_flag"       />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="nickName"      column="nick_name"      />
+    </resultMap>
+
+    <sql id="selectSessionVo">
+        select s.id, s.user_id, s.session_title, s.session_type, s.model, s.message_count,
+               s.status, s.del_flag, s.create_time, s.update_time,
+               u.nick_name
+        from ai_chat_session s
+        left join sys_user u on s.user_id = u.user_id
+    </sql>
+
+    <select id="selectSessionList" resultMap="AiChatSessionResult">
+        <include refid="selectSessionVo"/>
+        <where>
+            s.del_flag = '0'
+            <if test="userId != null">
+                and s.user_id = #{userId}
+            </if>
+        </where>
+        order by s.create_time desc
+    </select>
+
+</mapper>

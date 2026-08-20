@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ShopOrderMapper">
+
+    <resultMap type="com.ruoyi.system.domain.ShopOrder" id="ShopOrderResult">
+        <id     property="id"            column="id"             />
+        <result property="orderNo"       column="order_no"       />
+        <result property="userId"        column="user_id"        />
+        <result property="productId"     column="product_id"     />
+        <result property="productName"   column="product_name"   />
+        <result property="productImage"  column="product_image"  />
+        <result property="pointsPrice"   column="points_price"   />
+        <result property="quantity"      column="quantity"       />
+        <result property="totalPoints"   column="total_points"   />
+        <result property="addressId"     column="address_id"     />
+        <result property="status"        column="status"         />
+        <result property="expressNo"     column="express_no"     />
+        <result property="expressCompany" column="express_company" />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="userName"      column="user_name"      />
+    </resultMap>
+
+    <sql id="selectOrderVo">
+        select o.id, o.order_no, o.user_id, o.product_id, o.product_name, o.product_image,
+               o.points_price, o.quantity, o.total_points, o.address_id, o.status,
+               o.express_no, o.express_company, o.create_time, o.update_time,
+               u.nick_name as user_name
+        from shop_order o
+        left join sys_user u on o.user_id = u.user_id
+    </sql>
+
+    <select id="selectOrderList" resultMap="ShopOrderResult">
+        <include refid="selectOrderVo"/>
+        <where>
+            <if test="userId != null">
+                and o.user_id = #{userId}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                and o.order_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                and o.status = #{status}
+            </if>
+        </where>
+        order by o.create_time desc
+    </select>
+
+    <!-- 订单详情结果映射（含关联用户和收货地址） -->
+    <resultMap type="com.ruoyi.system.domain.vo.OrderDetailVO" id="OrderDetailVOResult">
+        <id     property="id"             column="id"              />
+        <result property="orderNo"        column="order_no"        />
+        <result property="userId"         column="user_id"         />
+        <result property="productId"      column="product_id"      />
+        <result property="productName"    column="product_name"    />
+        <result property="productImage"   column="product_image"   />
+        <result property="pointsPrice"    column="points_price"    />
+        <result property="quantity"       column="quantity"        />
+        <result property="totalPoints"    column="total_points"    />
+        <result property="addressId"      column="address_id"      />
+        <result property="status"         column="status"          />
+        <result property="expressNo"      column="express_no"      />
+        <result property="expressCompany" column="express_company" />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateTime"     column="update_time"     />
+        <association property="user" javaType="com.ruoyi.system.domain.vo.OrderDetailVO$UserInfo">
+            <result property="userId"      column="u_user_id"      />
+            <result property="nickName"    column="u_nick_name"    />
+            <result property="avatar"      column="u_avatar"       />
+            <result property="phonenumber" column="u_phonenumber"  />
+        </association>
+        <association property="address" javaType="com.ruoyi.system.domain.UserAddress">
+            <id     property="id"            column="a_id"              />
+            <result property="userId"        column="a_user_id"         />
+            <result property="receiverName"  column="a_receiver_name"   />
+            <result property="receiverPhone" column="a_receiver_phone"  />
+            <result property="province"      column="a_province"        />
+            <result property="city"          column="a_city"            />
+            <result property="district"      column="a_district"        />
+            <result property="detailAddress" column="a_detail_address"  />
+            <result property="isDefault"     column="a_is_default"      />
+            <result property="createTime"    column="a_create_time"     />
+        </association>
+    </resultMap>
+
+    <!-- 查询订单详情（关联用户表和收货地址表） -->
+    <select id="selectOrderDetailById" resultMap="OrderDetailVOResult">
+        select o.id, o.order_no, o.user_id, o.product_id, o.product_name, o.product_image,
+               o.points_price, o.quantity, o.total_points, o.address_id, o.status,
+               o.express_no, o.express_company, o.create_time, o.update_time,
+               u.user_id      as u_user_id,
+               u.nick_name    as u_nick_name,
+               u.avatar       as u_avatar,
+               u.phonenumber  as u_phonenumber,
+               a.id             as a_id,
+               a.user_id        as a_user_id,
+               a.receiver_name  as a_receiver_name,
+               a.receiver_phone as a_receiver_phone,
+               a.province       as a_province,
+               a.city           as a_city,
+               a.district       as a_district,
+               a.detail_address as a_detail_address,
+               a.is_default     as a_is_default,
+               a.create_time    as a_create_time
+        from shop_order o
+        left join sys_user u on o.user_id = u.user_id
+        left join user_address a on o.address_id = a.id
+        where o.id = #{orderId}
+    </select>
+
+</mapper>

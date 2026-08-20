@@ -1,0 +1,111 @@
+# ======================================================
+# 宠迹项目 Git 忽略规则（Java + Vue2 + UniApp 多模块）
+# ======================================================
+
+# -------------------- 系统文件 --------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# -------------------- IDE / 编辑器 --------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.factorypath
+
+# -------------------- Java / Maven 编译产物 --------------------
+target/
+build/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
+
+# -------------------- 日志 --------------------
+logs/
+*.log
+sys-*.log
+
+# -------------------- Node.js 通用 --------------------
+node_modules/
+dist/
+dist-ssr/
+.npm/
+.pnpm-store/
+.yarn/
+.eslintcache
+
+# npm / yarn / pnpm 调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+package-lock.json
+yarn.lock
+
+# -------------------- UniApp / 小程序 --------------------
+unpackage/
+*.tar
+build/mp-weixin/
+**/mp-weixin/
+
+# -------------------- 前端构建产物（管理端 ruoyi-ui） --------------------
+ruoyi-ui/dist/
+ruoyi-ui/node_modules/
+ruoyi-ui/npm-debug.log*
+
+# -------------------- 测试 / 覆盖率 --------------------
+coverage/
+*.lcov
+.nyc_output
+tests/**/coverage/
+tests/e2e/reports
+selenium-debug.log
+
+# -------------------- 环境变量（可能含密钥） --------------------
+# 保留仓库内的 .env / .env.development 等示例文件，仅忽略本地覆盖
+.env.local
+.env.*.local
+*.local
+
+# 密钥与凭证（防止误提交）
+*.pem
+*.key
+*.crt
+*.p12
+keystore/
+application-local.yml
+application-prod.yml
+
+# -------------------- 临时 / 备份文件 --------------------
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+*.rej
+
+# -------------------- 其他 --------------------
+!**/.gitkeep
+!**/src/main/resources/**/*.vm
+!**/src/test/resources/**/*.vm

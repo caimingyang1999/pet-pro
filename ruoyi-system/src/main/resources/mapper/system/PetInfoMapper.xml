@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.PetInfoMapper">
+
+    <resultMap type="com.ruoyi.system.domain.PetInfo" id="PetInfoResult">
+        <id     property="id"            column="id"             />
+        <result property="userId"        column="user_id"        />
+        <result property="name"          column="name"           />
+        <result property="avatar"        column="avatar"         />
+        <result property="breed"         column="breed"          />
+        <result property="birthday"      column="birthday"       />
+        <result property="gender"        column="gender"         />
+        <result property="weight"        column="weight"         />
+        <result property="color"         column="color"          />
+        <result property="sterilization" column="sterilization" />
+        <result property="remark"        column="remark"         />
+        <result property="delFlag"       column="del_flag"       />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="userName"      column="user_name"      />
+    </resultMap>
+
+    <sql id="selectPetVo">
+        select p.id, p.user_id, p.name, p.avatar, p.breed, p.birthday, p.gender,
+               p.weight, p.color, p.sterilization, p.remark, p.del_flag,
+               p.create_time, p.update_time,
+               u.nick_name as user_name
+        from pet_info p
+        left join sys_user u on p.user_id = u.user_id
+    </sql>
+
+    <select id="selectPetList" resultMap="PetInfoResult">
+        <include refid="selectPetVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="userId != null">
+                and p.user_id = #{userId}
+            </if>
+        </where>
+        order by p.create_time desc
+    </select>
+
+</mapper>

@@ -1,0 +1,9 @@
+/* 阿里巴巴图标库 - iconfont */
+/* H5 环境通过 CDN 加载字体，小程序环境使用内置 Unicode 符号降级 */
+
+@font-face {
+  font-family: "iconfont";
+  src: url("//at.alicdn.com/t/c/font_3859941_xxxxx.woff2") format("woff2"),
+       url("//at.alicdn.com/t/c/font_3859941_xxxxx.woff") format("woff"),
+       url("//at.alicdn.com/t/c/font_3859941_xxxxx.ttf") format("truetype");
+}
