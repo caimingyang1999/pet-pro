@@ -23,21 +23,25 @@ import com.ruoyi.ai.service.IAiChatSessionService;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.system.service.ISysConfigService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 
 /**
- * AI对话 控制器
- * 作为中间代理对接Node.js流式AI服务，同时持久化对话记录与记忆。
+ * 养宠顾问 控制器
+ * 作为中间代理对接流式问答服务，同时持久化问答记录与记忆。
  *
  * @author ruoyi
  */
-@Api(tags = "AI对话")
+@Api(tags = "养宠顾问")
 @RestController
-@RequestMapping("/api/v1/ai")
+@RequestMapping("/api/v1/adviser")
 public class AiChatController extends BaseController
 {
+    /** 养宠顾问功能开关参数键（sys_config，true开启/false关闭） */
+    private static final String CONFIG_KEY_ADVISER_ENABLED = "feature.adviser.enabled";
+
     @Resource
     private IAiChatService aiChatService;
 
@@ -47,20 +51,47 @@ public class AiChatController extends BaseController
     @Resource
     private IAiChatMessageService aiChatMessageService;
 
+    @Resource
+    private ISysConfigService configService;
+
     /**
-     * AI流式对话（SSE）
-     * 调用Node.js AI服务，流式返回AI回答，同时保存对话记录到数据库。
+     * 养宠顾问功能是否启用（参数未配置时默认开启）
+     */
+    private boolean isAdviserEnabled()
+    {
+        return !"false".equalsIgnoreCase(configService.selectConfigByKey(CONFIG_KEY_ADVISER_ENABLED));
+    }
+
+    /**
+     * 养宠顾问流式问答（SSE）
+     * 调用流式问答服务，流式返回回答，同时保存问答记录到数据库。
      *
-     * @param req 对话请求（message-用户输入，sessionId-会话ID）
+     * @param req 问答请求（message-用户输入，sessionId-会话ID）
      * @return SSE流
      */
-    @ApiOperation("AI流式对话（SSE）")
+    @ApiOperation("养宠顾问流式问答（SSE）")
     @PreAuthorize("@ss.isAuthenticated()")
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chat(@Validated @RequestBody ChatRequest req)
     {
         // 创建不超时的SSE发射器
         SseEmitter emitter = new SseEmitter(0L);
+
+        // 功能开关关闭：通过SSE错误事件通知前端，不调用问答服务
+        if (!isAdviserEnabled())
+        {
+            try
+            {
+                emitter.send(SseEmitter.event().data("{\"type\":\"error\",\"message\":\"功能升级中，敬请期待\"}"));
+            }
+            catch (IOException e)
+            {
+                emitter.completeWithError(e);
+            }
+            emitter.complete();
+            return emitter;
+        }
+
         Long userId = getUserId();
 
         aiChatService.chat(req.getMessage(), req.getSessionId(), userId)
@@ -83,21 +114,25 @@ public class AiChatController extends BaseController
     }
 
     /**
-     * 清空指定会话的对话记忆
-     * 同时清理Node.js内存历史与数据库记录。
+     * 清空指定会话的问答记忆
+     * 同时清理问答服务内存历史与数据库记录。
      *
      * @param sessionId 会话ID
      * @return 操作结果
      */
-    @ApiOperation("清空对话记忆")
+    @ApiOperation("清空问答记忆")
     @PreAuthorize("@ss.isAuthenticated()")
     @DeleteMapping("/chat/history/{sessionId}")
     public AjaxResult clearHistory(
             @ApiParam(name = "sessionId", value = "会话ID", required = true)
             @PathVariable String sessionId)
     {
+        if (!isAdviserEnabled())
+        {
+            throw new ServiceException("功能升级中，敬请期待");
+        }
         aiChatService.clearHistory(sessionId);
-        return AjaxResult.success("对话记忆已清空");
+        return AjaxResult.success("问答记录已清空");
     }
 
     /**
@@ -110,13 +145,17 @@ public class AiChatController extends BaseController
     @GetMapping("/sessions")
     public AjaxResult listSessions()
     {
+        if (!isAdviserEnabled())
+        {
+            throw new ServiceException("功能升级中，敬请期待");
+        }
         Long userId = getUserId();
         List<AiChatSession> list = aiChatSessionService.getSessionList(userId);
         return AjaxResult.success(list);
     }
 
     /**
-     * 获取指定会话的消息记录（对话历史）
+     * 获取指定会话的消息记录（问答历史）
      *
      * @param sessionId 会话ID
      * @return 消息列表
@@ -128,6 +167,10 @@ public class AiChatController extends BaseController
             @ApiParam(name = "sessionId", value = "会话ID", required = true)
             @PathVariable String sessionId)
     {
+        if (!isAdviserEnabled())
+        {
+            throw new ServiceException("功能升级中，敬请期待");
+        }
         Long dbSessionId = parseDbSessionId(sessionId);
         if (dbSessionId == null)
         {

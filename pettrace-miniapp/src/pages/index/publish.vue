@@ -46,6 +46,7 @@ import { ref, computed } from 'vue';
 import { addPost } from '@/api/post.js';
 import { showToast, showLoading, hideLoading } from '@/utils/index.js';
 import { BASE_URL, SERVER_BASE } from '@/api/request.js';
+import { pickUploadedPath } from '@/api/request.js';
 
 const form = ref({
   content: '',
@@ -99,10 +100,10 @@ const uploadImages = async (files) => {
           success: (uploadRes) => {
             try {
               const data = JSON.parse(uploadRes.data);
-              // RuoYi AjaxResult 格式: { code, msg, url, fileName }
+              // RuoYi AjaxResult 格式: { code, msg, url, fileName, imgUrl }
               if (data.code === 200) {
-                // 优先使用相对路径(fileName)，避免完整 URL 中包含 localhost / 旧 IP 导致真机无法访问
-                const imgUrl = data.fileName || data.url || '';
+                // 统一封装：避免绝对路径/旧域名入库，磁盘绝对路径自动归一化为 /profile/...
+                const imgUrl = pickUploadedPath(data);
                 if (imgUrl) {
                   resolve(imgUrl);
                 } else {

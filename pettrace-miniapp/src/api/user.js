@@ -62,6 +62,20 @@ export function getPointsLog(params) {
 }
 
 /**
+ * 获取今日签到状态
+ */
+export function getSignInStatus() {
+  return get('/user/sign-in/status');
+}
+
+/**
+ * 每日签到
+ */
+export function signIn() {
+  return post('/user/sign-in');
+}
+
+/**
  * 获取收货地址列表
  */
 export function getAddressList() {

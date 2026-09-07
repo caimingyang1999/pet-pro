@@ -85,7 +85,7 @@ public class PostServiceImpl extends ServiceImpl<PetPostMapper, PetPost> impleme
     }
 
     /**
-     * 发布动态（增加积分）
+     * 发布动态（待审核，暂不发放积分，审核通过后发放）
      *
      * @param post 动态信息
      * @return 结果
@@ -97,7 +97,33 @@ public class PostServiceImpl extends ServiceImpl<PetPostMapper, PetPost> impleme
         // 待审核状态
         post.setStatus("0");
         baseMapper.insert(post);
-        // 发布动态增加积分（+10分）
+        return true;
+    }
+
+    /**
+     * 审核通过动态（发放积分，需防重复发放）
+     *
+     * @param postId 动态ID
+     * @return 结果
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean approvePost(Long postId)
+    {
+        PetPost post = baseMapper.selectById(postId);
+        if (post == null)
+        {
+            throw new ServiceException("动态不存在");
+        }
+        if (!"0".equals(post.getStatus()))
+        {
+            throw new ServiceException("该动态已审核，请勿重复操作");
+        }
+        // 更新状态为审核通过
+        LambdaUpdateWrapper<PetPost> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(PetPost::getId, postId).set(PetPost::getStatus, "1");
+        baseMapper.update(null, updateWrapper);
+        // 审核通过后发放积分（+10分）
         userPointsService.addPoints(post.getUserId(), 10, "post", post.getId());
         return true;
     }

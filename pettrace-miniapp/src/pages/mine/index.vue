@@ -10,19 +10,22 @@
       @refresherrefresh="onRefresh"
       @scrolltolower="() => {}"
     >
-      <!-- 自定义导航栏 -->
-      <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
-        <view class="nav-content">
-          <view class="nav-left">
-            <text class="nav-title">我的</text>
-            <text class="nav-sub">宠迹 · 陪伴每一段美好时光</text>
-          </view>
-        </view>
-      </view>
+      <!-- 状态栏占位 -->
+      <view :style="{ height: statusBarHeight + 'px' }" />
 
       <!-- 1. 顶部用户卡片 -->
       <view class="user-card-wrap">
         <view class="user-card-bg" />
+        <!-- 签到按钮（右上角） -->
+        <view
+          class="sign-in-btn"
+          :class="{ 'signed': hasSigned, 'loading': signInLoading }"
+          @click="handleSignIn"
+        >
+          <text v-if="hasSigned">已签到</text>
+          <text v-else-if="signInLoading">签到中...</text>
+          <text v-else>签到 +5</text>
+        </view>
         <view class="user-info">
           <!-- 头像 -->
           <view class="avatar-box" @click="changeAvatar">
@@ -68,27 +71,17 @@
         </view>
       </view>
 
-      <!-- 2. 功能菜单列表（与下方客服栏统一样式） -->
-      <view class="section-title">
-        <view class="title-icon">
-          <Icon name="pet" :size="14" color="#FF7E3D" />
-        </view>
-        <text>我的服务</text>
-      </view>
-
+      <!-- 2. 功能菜单列表 -->
       <view class="menu-card">
         <view
-          class="menu-item"
-          v-for="item in serviceMenu"
-          :key="item.key"
-          @click="handleMenuClick(item)"
-        >
-          <view class="menu-icon" :style="{ background: item.iconBg }">
-            <Icon :name="item.icon" :size="18" :color="item.iconColor" />
+            class="menu-item"
+            v-for="item in serviceMenu"
+            :key="item.key"
+            @click="handleMenuClick(item)"
+          >
+            <text class="menu-title">{{ item.title }}</text>
+            <Icon name="chevron_right" :size="16" color="#C0C4CC" />
           </view>
-          <text class="menu-title">{{ item.title }}</text>
-          <Icon name="chevron_right" :size="16" color="#C0C4CC" />
-        </view>
       </view>
 
       <!-- 3. 其他菜单列表 -->
@@ -99,9 +92,6 @@
           :key="item.key"
           @click="handleMenuClick(item)"
         >
-          <view class="menu-icon" :style="{ background: item.iconBg }">
-            <Icon :name="item.icon" :size="18" :color="item.iconColor" />
-          </view>
           <text class="menu-title">{{ item.title }}</text>
           <text class="menu-desc" v-if="item.desc">{{ item.desc }}</text>
           <Icon name="chevron_right" :size="16" color="#C0C4CC" />
@@ -111,7 +101,6 @@
       <!-- 4. 退出登录 -->
       <view class="logout-wrap">
         <view class="logout-btn" @click="handleLogout">
-          <Icon name="logout" :size="18" color="#FF7E3D" />
           <text>退出登录</text>
         </view>
       </view>
@@ -170,9 +159,12 @@ import Icon from '@/components/Icon.vue';
 import { fullImageUrl } from '@/utils/index.js';
 import { useUserStore } from '@/store/user.js';
 import { SERVER_BASE } from '@/api/request.js';
+import { pickUploadedPath } from '@/api/request.js';
 import { getOrderList } from '@/api/shop.js';
 import { getMyPosts } from '@/api/post.js';
+import { getSignInStatus, signIn } from '@/api/user.js';
 import { showToast, showLoading, hideLoading } from '@/utils/index.js';
+import { features } from '@/config/features.js';
 
 const userStore = useUserStore();
 const isLogin = computed(() => userStore.isLogin);
@@ -181,6 +173,8 @@ const userInfo = computed(() => userStore.userInfo);
 const refreshing = ref(false);
 const orderCount = ref(0);
 const postCount = ref(0);
+const hasSigned = ref(false); // 今日是否已签到
+const signInLoading = ref(false); // 签到按钮防重复点击
 
 const statusBarHeight = ref(20);
 // #ifdef MP-WEIXIN
@@ -191,19 +185,23 @@ try {
 // #endif
 
 const serviceMenu = reactive([
-  { key: 'pets', title: '我的宠物', icon: 'pet', iconColor: '#FF7E3D', iconBg: '#FFF1E7', path: '/pages/pet/list', needLogin: true },
-  { key: 'chats', title: '对话记录', icon: 'message', iconColor: '#3B82F6', iconBg: '#EBF3FF', path: '/pages/chat/history', needLogin: true },
-  { key: 'posts', title: '我的动态', icon: 'file_text', iconColor: '#FF7E3D', iconBg: '#FFF1E7', path: '/pages/mine/posts', needLogin: true },
-  { key: 'orders', title: '我的订单', icon: 'order', iconColor: '#FF7E3D', iconBg: '#FFF0E6', path: '/pages/mine/orders', needLogin: true },
-  { key: 'address', title: '收货地址', icon: 'address', iconColor: '#3B82F6', iconBg: '#EBF3FF', path: '/pages/mine/address', needLogin: true },
-  { key: 'points', title: '积分商城', icon: 'gift', iconColor: '#22C55E', iconBg: '#EBFBF1', path: '/pages/shop/index', needLogin: true },
+  { key: 'pets', title: '我的宠物', path: '/pages/pet/list', needLogin: true },
+  { key: 'chats', title: '问答记录', path: '/pages/chat/history', needLogin: true },
+  { key: 'posts', title: '我的动态', path: '/pages/mine/posts', needLogin: true },
+  { key: 'orders', title: '我的订单', path: '/pages/mine/orders', needLogin: true },
+  { key: 'address', title: '收货地址', path: '/pages/mine/address', needLogin: true },
+  { key: 'points', title: '积分商城', path: '/pages/shop/index', needLogin: true },
 ]);
 
 const otherMenuList = reactive([
-  { key: 'service', title: '联系客服', desc: '7×24小时在线', icon: 'headphone', iconColor: '#3B82F6', iconBg: '#EBF3FF', path: '', needLogin: false },
-  { key: 'about', title: '关于宠迹', desc: '版本 v1.0.0', icon: 'info', iconColor: '#22C55E', iconBg: '#EBFBF1', path: '', needLogin: false },
-  { key: 'setting', title: '设置', icon: 'settings', iconColor: '#FF7E3D', iconBg: '#FFF0E6', path: '', needLogin: false },
+  { key: 'about', title: '关于宠迹', desc: '版本 v1.0.0', path: '', needLogin: false },
+  { key: 'setting', title: '设置', path: '', needLogin: false },
 ]);
+
+// 养宠顾问功能关闭时，隐藏"问答记录"入口
+const visibleServiceMenu = computed(() =>
+  serviceMenu.filter((item) => item.key !== 'chats' || features.adviserEnabled !== false)
+);
 
 const fetchUserInfo = async () => {
   if (!isLogin.value) return;
@@ -235,14 +233,53 @@ const fetchStats = async () => {
 
 const onRefresh = async () => {
   refreshing.value = true;
-  await Promise.all([fetchUserInfo(), fetchStats()]);
+  await Promise.all([fetchUserInfo(), fetchStats(), fetchSignInStatus()]);
   refreshing.value = false;
+};
+
+/**
+ * 获取今日签到状态
+ */
+const fetchSignInStatus = async () => {
+  if (!isLogin.value) return;
+  try {
+    const res = await getSignInStatus();
+    hasSigned.value = !!res.signed;
+  } catch (e) {
+    console.error('[mine页] 获取签到状态失败:', e?.code, e?.msg);
+  }
+};
+
+/**
+ * 每日签到（防重复点击）
+ */
+const handleSignIn = async () => {
+  if (signInLoading.value) return; // 防重复点击
+  if (hasSigned.value) {
+    showToast('今日已签到');
+    return;
+  }
+  signInLoading.value = true;
+  try {
+    const res = await signIn();
+    hasSigned.value = true;
+    // 更新本地积分余额
+    if (res.pointsBalance != null) {
+      userStore.setUserInfo({ ...userStore.userInfo, points: res.pointsBalance });
+    }
+    showToast(res.message || `签到成功，获得 ${res.pointsReward || 5} 积分`, 'success');
+  } catch (e) {
+    showToast(e?.msg || '签到失败，请重试');
+  } finally {
+    signInLoading.value = false;
+  }
 };
 
 onShow(() => {
   if (!userInfo.value) userStore.initUserInfo();
   fetchUserInfo();
   fetchStats();
+  fetchSignInStatus();
   uni.setNavigationBarTitle({ title: '我的' });
 });
 
@@ -305,10 +342,13 @@ const changeAvatar = () => {
           try {
             const data = JSON.parse(res.data);
             if (data.code === 200) {
-              const avatarUrl = data.imgUrl;
+              // 统一读取响应字段并做磁盘绝对路径归一化
+              const avatarUrl = pickUploadedPath(data);
               if (avatarUrl) {
-                const fullUrl = avatarUrl.startsWith('http') ? avatarUrl : `${SERVER_BASE}${avatarUrl}`;
+                const fullUrl = avatarUrl.startsWith('http') ? avatarUrl : `${SERVER_BASE}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`;
                 userStore.setUserInfo({ ...userStore.userInfo, avatar: fullUrl });
+              } else {
+                showToast('服务器未返回头像地址');
               }
               showToast('头像更新成功', 'success');
             } else {
@@ -325,7 +365,7 @@ const changeAvatar = () => {
   });
 };
 
-const goPointsDetail = () => showToast('积分明细开发中');
+const goPointsDetail = () => uni.navigateTo({ url: '/pages/mine/points' });
 const goOrders = () => uni.navigateTo({ url: '/pages/mine/orders' });
 const goPosts = () => uni.navigateTo({ url: '/pages/mine/posts' });
 
@@ -334,8 +374,8 @@ const handleMenuClick = (item) => {
     showToast('请先登录');
     return;
   }
-  if (item.key === 'service') {
-    uni.makePhoneCall({ phoneNumber: '400-000-0000' }).catch(() => showToast('暂未开放'));
+  if (item.key === 'chats' && features.adviserEnabled === false) {
+    showToast('功能升级中，敬请期待');
     return;
   }
   if (!item.path) {
@@ -370,37 +410,6 @@ const handleLogout = () => {
   height: 100vh;
 }
 
-/* ========== 自定义导航栏 ========== */
-.custom-nav {
-  padding: 0 32rpx;
-
-  .nav-content {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 24rpx 8rpx;
-  }
-
-  .nav-left {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .nav-title {
-    font-size: 40rpx;
-    font-weight: 700;
-    color: #3D2B1D;
-    line-height: 1.3;
-  }
-
-  .nav-sub {
-    font-size: 22rpx;
-    color: #A8A8B0;
-    margin-top: 4rpx;
-  }
-
-}
-
 /* ========== 用户卡片 ========== */
 .user-card-wrap {
   position: relative;
@@ -417,6 +426,36 @@ const handleLogout = () => {
     height: 100%;
     background: linear-gradient(135deg, #FFFFFF 0%, #FFF7F0 100%);
     z-index: 0;
+  }
+
+  /* 签到按钮 */
+  .sign-in-btn {
+    position: absolute;
+    top: 24rpx;
+    right: 24rpx;
+    z-index: 3;
+    padding: 12rpx 24rpx;
+    border-radius: 32rpx;
+    background: linear-gradient(135deg, #FF7E3D 0%, #FF5722 100%);
+    color: #fff;
+    font-size: 24rpx;
+    font-weight: 600;
+    box-shadow: 0 4rpx 12rpx rgba(255, 126, 61, 0.35);
+    transition: opacity 0.2s;
+
+    &.signed {
+      background: #E0E0E0;
+      color: #999;
+      box-shadow: none;
+    }
+
+    &.loading {
+      opacity: 0.7;
+    }
+
+    &:active:not(.signed) {
+      opacity: 0.85;
+    }
   }
 }
 
@@ -528,31 +567,7 @@ const handleLogout = () => {
   }
 }
 
-/* ========== 分区标题 ========== */
-.section-title {
-  display: flex;
-  align-items: center;
-  padding: 40rpx 40rpx 20rpx;
-
-  text {
-    font-size: 30rpx;
-    color: #3D2B1D;
-    font-weight: 600;
-  }
-
-  .title-icon {
-    width: 36rpx;
-    height: 36rpx;
-    border-radius: 12rpx;
-    background: #FFF1E7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 12rpx;
-  }
-}
-
-/* ========== 菜单列表（与客服栏统一样式） ========== */
+/* ========== 菜单列表 ========== */
 .menu-card {
   margin: 24rpx 32rpx 0;
   background-color: #fff;
@@ -575,17 +590,6 @@ const handleLogout = () => {
   &:active {
     background-color: #FFF9F4;
   }
-}
-
-.menu-icon {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 22rpx;
-  flex-shrink: 0;
 }
 
 .menu-title {
@@ -620,10 +624,6 @@ const handleLogout = () => {
   gap: 12rpx;
   border: 2rpx solid #FFE8D6;
   box-shadow: 0 8rpx 28rpx rgba(150, 90, 40, 0.05);
-
-  text {
-    margin-left: 8rpx;
-  }
 
   &:active {
     background-color: #FFF7F0;

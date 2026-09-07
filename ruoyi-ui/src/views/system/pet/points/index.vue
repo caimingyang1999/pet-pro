@@ -133,22 +133,22 @@
     <el-dialog title="积分明细" :visible.sync="detailDialog.open" width="900px" append-to-body>
       <el-table v-loading="detailDialog.loading" :data="recordList" border>
         <el-table-column label="序号" type="index" width="60" align="center" />
-        <el-table-column label="变动类型" align="center" prop="type" width="130">
+        <el-table-column label="变动类型" align="center" prop="changeType" width="130">
           <template slot-scope="scope">
-            <el-tag :type="getTypeTagType(scope.row.type)" size="small">
-              {{ getTypeLabel(scope.row.type) }}
+            <el-tag :type="getTypeTagType(scope.row.changeType)" size="small">
+              {{ getTypeLabel(scope.row.changeType) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="变动数量" align="center" prop="changePoints" width="120">
+        <el-table-column label="变动数量" align="center" prop="pointsChange" width="120">
           <template slot-scope="scope">
-            <span :class="scope.row.changePoints > 0 ? 'points-add' : 'points-subtract'">
-              {{ scope.row.changePoints > 0 ? '+' : '' }}{{ scope.row.changePoints }}
+            <span :class="scope.row.pointsChange > 0 ? 'points-add' : 'points-subtract'">
+              {{ scope.row.pointsChange > 0 ? '+' : '' }}{{ scope.row.pointsChange }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="变动后余额" align="center" prop="balance" width="120" />
-        <el-table-column label="关联业务ID" align="center" prop="bizId" width="120" :show-overflow-tooltip="true" />
+        <el-table-column label="变动后余额" align="center" prop="pointsBalance" width="120" />
+        <el-table-column label="关联业务ID" align="center" prop="relateId" width="120" :show-overflow-tooltip="true" />
         <el-table-column label="备注" align="center" prop="remark" min-width="150" :show-overflow-tooltip="true" />
         <el-table-column label="时间" align="center" prop="createTime" width="160">
           <template slot-scope="scope">
@@ -225,9 +225,8 @@ export default {
       typeOptions: [
         { value: "sign_in", label: "签到", tagType: "success" },
         { value: "post", label: "发布动态", tagType: "primary" },
-        { value: "like", label: "被点赞", tagType: "success" },
-        { value: "comment", label: "被评论", tagType: "success" },
-        { value: "pet_complete", label: "完善宠物", tagType: "primary" },
+        { value: "pet", label: "完善宠物信息", tagType: "primary" },
+        { value: "register", label: "注册奖励", tagType: "success" },
         { value: "exchange", label: "兑换商品", tagType: "warning" },
         { value: "admin", label: "管理员操作", tagType: "info" }
       ]

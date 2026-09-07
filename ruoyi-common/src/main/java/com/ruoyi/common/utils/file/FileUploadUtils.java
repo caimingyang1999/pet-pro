@@ -170,9 +170,50 @@ public class FileUploadUtils
 
     public static final String getPathFileName(String uploadDir, String fileName) throws IOException
     {
-        int dirLastIndex = RuoYiConfig.getProfile().length() + 1;
-        String currentDir = StringUtils.substring(uploadDir, dirLastIndex);
+        String profile = RuoYiConfig.getProfile();
+        // 统一路径分隔符 & 去掉末尾分隔符，避免 Windows(\) / Linux(/) 差异以及 profile 末尾多 / 导致切分失败
+        String profileNorm = normalizePath(profile);
+        String uploadDirNorm = normalizePath(uploadDir);
+        String currentDir;
+        if (StringUtils.isNotEmpty(profileNorm) && (uploadDirNorm.equals(profileNorm) || uploadDirNorm.startsWith(profileNorm + "/")))
+        {
+            // uploadDir 位于 profile 根目录下：精确去掉 profile 前缀
+            int skip = profileNorm.length();
+            currentDir = (uploadDirNorm.length() > skip) ? uploadDirNorm.substring(skip + 1) : "";
+        }
+        else
+        {
+            // 兜底：环境变量不一致 / baseDir 传入值不规范时，回退到原始算法并打印警告，
+            // 避免出现磁盘绝对路径被当成 URL 返回给前端
+            int dirLastIndex = (profile == null ? 0 : profile.length()) + 1;
+            currentDir = dirLastIndex < uploadDir.length() ? StringUtils.substring(uploadDir, dirLastIndex) : "";
+        }
+        // 拼接 fileName（本身形如 2026/08/28/xxx.png，不需要再加 / 前缀）
+        if (StringUtils.isEmpty(currentDir))
+        {
+            return Constants.RESOURCE_PREFIX + "/" + fileName;
+        }
         return Constants.RESOURCE_PREFIX + "/" + currentDir + "/" + fileName;
+    }
+
+    /**
+     * 规范化路径：
+     * 1) 将 Windows 反斜杠统一为 /
+     * 2) 去掉末尾的 /
+     * 3) 去掉首尾空白，避免配置文件里多敲了空格
+     */
+    private static String normalizePath(String path)
+    {
+        if (path == null)
+        {
+            return "";
+        }
+        String p = path.trim().replace('\\', '/');
+        while (p.endsWith("/") && p.length() > 1)
+        {
+            p = p.substring(0, p.length() - 1);
+        }
+        return p;
     }
 
     /**

@@ -87,6 +87,8 @@ selenium-debug.log
 .env.local
 .env.*.local
 *.local
+# 含真实密码的生产环境变量文件，禁止提交
+.env.prod
 
 # 密钥与凭证（防止误提交）
 *.pem
@@ -95,7 +97,7 @@ selenium-debug.log
 *.p12
 keystore/
 application-local.yml
-application-prod.yml
+# application-prod.yml 已改为引用环境变量，不含敏感信息，可安全提交
 
 # -------------------- 临时 / 备份文件 --------------------
 *.tmp

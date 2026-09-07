@@ -177,6 +177,7 @@ import { ref, onMounted } from 'vue';
 import { addPet, updatePet, deletePet, getPetDetail } from '@/api/pet.js';
 import { showToast, showConfirm, showLoading, hideLoading, fullImageUrl } from '@/utils/index.js';
 import { SERVER_BASE } from '@/api/request.js';
+import { pickUploadedPath } from '@/api/request.js';
 
 // RuoYi 通用上传接口
 const UPLOAD_URL = `${SERVER_BASE}/common/upload`;
@@ -235,9 +236,10 @@ const uploadAvatar = (filePath) => {
       try {
         const data = JSON.parse(uploadRes.data);
         if (data.code === 200) {
-          const url = data.url || data.data?.url || data.fileName || '';
-          if (url) {
-            form.value.avatar = url;
+          // 使用统一封装：兼容 fileName/url/imgUrl 多字段，并把磁盘绝对路径归一化为 /profile/...
+          const path = pickUploadedPath(data);
+          if (path) {
+            form.value.avatar = path;
           } else {
             showToast('服务器未返回图片地址');
           }

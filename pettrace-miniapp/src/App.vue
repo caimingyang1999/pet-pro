@@ -1,11 +1,14 @@
 <script setup>
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app';
 import { useUserStore } from '@/store/user.js';
+import { fetchFeatures } from '@/config/features.js';
 
 onLaunch(() => {
   console.log('App Launch');
   const userStore = useUserStore();
   userStore.initUserInfo();
+  // 拉取远程功能开关（静默失败，不影响启动；结果全局缓存复用）
+  fetchFeatures();
   // 检查登录状态，未登录则跳转登录页
   checkLoginAndRedirect();
 });

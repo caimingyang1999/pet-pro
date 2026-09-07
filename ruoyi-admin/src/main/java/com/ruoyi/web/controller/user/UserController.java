@@ -32,6 +32,7 @@ import com.ruoyi.framework.security.context.AuthenticationContextHolder;
 import com.ruoyi.framework.web.service.TokenService;
 import com.ruoyi.system.domain.UserAddress;
 import com.ruoyi.system.domain.UserPointsLog;
+import com.ruoyi.system.domain.vo.SignInVO;
 import com.ruoyi.system.domain.vo.UserInfoVO;
 import com.ruoyi.system.mapper.SysUserMapper;
 import com.ruoyi.system.service.ISysUserService;
@@ -166,6 +167,34 @@ public class UserController extends BaseController
         startPage();
         List<UserPointsLog> list = userPointsService.getPointsLog(getUserId());
         return getDataTable(list);
+    }
+
+    /**
+     * 获取今日签到状态
+     *
+     * @return 签到状态（signed-是否已签到，pointsBalance-当前积分）
+     */
+    @ApiOperation("获取今日签到状态")
+    @PreAuthorize("@ss.isAuthenticated()")
+    @GetMapping("/sign-in/status")
+    public AjaxResult signInStatus()
+    {
+        SignInVO vo = userPointsService.getSignInStatus(getUserId());
+        return AjaxResult.success(vo);
+    }
+
+    /**
+     * 每日签到（每天仅一次，奖励 +5 积分）
+     *
+     * @return 签到结果（signed-是否签到成功，pointsReward-奖励积分，pointsBalance-签到后余额）
+     */
+    @ApiOperation("每日签到")
+    @PreAuthorize("@ss.isAuthenticated()")
+    @PostMapping("/sign-in")
+    public AjaxResult signIn()
+    {
+        SignInVO vo = userPointsService.signIn(getUserId());
+        return AjaxResult.success(vo);
     }
 
     /**

@@ -28,7 +28,7 @@
           v-model="loginForm.code"
           auto-complete="off"
           placeholder="验证码"
-          style="width: 63%"
+          style="width: 50%"
           @keyup.enter.native="handleLogin"
         >
           <svg-icon slot="prefix" icon-class="validCode" class="el-input__icon input-icon" />
@@ -75,8 +75,8 @@ export default {
       footerContent: defaultSettings.footerContent,
       codeUrl: "",
       loginForm: {
-        username: "admin",
-        password: "admin123",
+        username: "",
+        password: "",
         rememberMe: false,
         code: "",
         uuid: ""
@@ -115,7 +115,7 @@ export default {
       getCodeImg().then(res => {
         this.captchaEnabled = res.captchaEnabled === undefined ? true : res.captchaEnabled
         if (this.captchaEnabled) {
-          this.codeUrl = "data:image/gif;base64," + res.img
+          this.codeUrl = "data:image/jpeg;base64," + res.img
           this.loginForm.uuid = res.uuid
         }
       })
@@ -197,12 +197,13 @@ export default {
   color: #bfbfbf;
 }
 .login-code {
-  width: 33%;
+  width: 46%;
   height: 38px;
   float: right;
   img {
     cursor: pointer;
     vertical-align: middle;
+    max-width: 100%;
   }
 }
 .el-login-footer {

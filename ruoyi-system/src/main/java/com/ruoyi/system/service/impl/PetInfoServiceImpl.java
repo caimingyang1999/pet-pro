@@ -12,6 +12,7 @@ import com.ruoyi.system.domain.PetVaccine;
 import com.ruoyi.system.mapper.PetInfoMapper;
 import com.ruoyi.system.mapper.PetVaccineMapper;
 import com.ruoyi.system.service.IPetInfoService;
+import com.ruoyi.system.service.IUserPointsService;
 
 /**
  * 宠物信息 服务层实现
@@ -23,6 +24,9 @@ public class PetInfoServiceImpl extends ServiceImpl<PetInfoMapper, PetInfo> impl
 {
     @Resource
     private PetVaccineMapper petVaccineMapper;
+
+    @Resource
+    private IUserPointsService userPointsService;
 
     /**
      * 获取用户宠物列表（含疫苗记录）
@@ -69,6 +73,7 @@ public class PetInfoServiceImpl extends ServiceImpl<PetInfoMapper, PetInfo> impl
 
     /**
      * 添加宠物（同时处理疫苗记录）
+     * 首次完善宠物信息时奖励 +20 积分（每用户仅一次）
      *
      * @param petInfo 宠物信息
      * @return 结果
@@ -81,6 +86,11 @@ public class PetInfoServiceImpl extends ServiceImpl<PetInfoMapper, PetInfo> impl
         baseMapper.insert(petInfo);
         // 保存疫苗记录
         saveVaccines(petInfo.getId(), petInfo.getVaccineList());
+        // 首次完善宠物信息奖励积分（每用户仅一次）
+        if (!userPointsService.hasReceivedReward(petInfo.getUserId(), "pet"))
+        {
+            userPointsService.addPoints(petInfo.getUserId(), 20, "pet", petInfo.getId());
+        }
         return true;
     }
 

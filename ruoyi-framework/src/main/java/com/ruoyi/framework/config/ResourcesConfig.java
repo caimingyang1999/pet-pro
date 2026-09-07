@@ -29,9 +29,24 @@ public class ResourcesConfig implements WebMvcConfigurer
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry)
     {
-        /** 本地文件上传路径 */
+        /**
+         * 本地文件上传路径
+         * 说明：前端不同环境会拼上不同的 API 前缀再访问图片资源，
+         *       为了保证 dev/prod/小程序 三端都能直接访问，这里同时注册多套映射：
+         *       1) /profile/**              -> 标准路径（后端直接访问）
+         *       2) /dev-api/profile/**      -> 管理后台开发环境（VUE_APP_BASE_API=/dev-api）
+         *       3) /prod-api/profile/**     -> 管理后台生产环境（VUE_APP_BASE_API=/prod-api）
+         *       4) /api/v1/profile/**       -> 小程序端接口前缀（VITE_API_PREFIX=/api/v1）
+         */
+        String resourceLocation = "file:" + RuoYiConfig.getProfile() + "/";
         registry.addResourceHandler(Constants.RESOURCE_PREFIX + "/**")
-                .addResourceLocations("file:" + RuoYiConfig.getProfile() + "/");
+                .addResourceLocations(resourceLocation);
+        registry.addResourceHandler("/dev-api" + Constants.RESOURCE_PREFIX + "/**")
+                .addResourceLocations(resourceLocation);
+        registry.addResourceHandler("/prod-api" + Constants.RESOURCE_PREFIX + "/**")
+                .addResourceLocations(resourceLocation);
+        registry.addResourceHandler("/api/v1" + Constants.RESOURCE_PREFIX + "/**")
+                .addResourceLocations(resourceLocation);
 
         /** swagger配置 */
         registry.addResourceHandler("/swagger-ui/**")

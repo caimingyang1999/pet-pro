@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.FastByteArrayOutputStream;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.google.code.kaptcha.Producer;
 import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.constant.Constants;
@@ -18,6 +17,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.utils.sign.Base64;
 import com.ruoyi.common.utils.uuid.IdUtils;
+import com.ruoyi.framework.config.PreRenderedCaptchaProducer;
 import com.ruoyi.system.service.ISysConfigService;
 
 /**
@@ -29,16 +29,17 @@ import com.ruoyi.system.service.ISysConfigService;
 public class CaptchaController
 {
     @Resource(name = "captchaProducer")
-    private Producer captchaProducer;
+    private PreRenderedCaptchaProducer captchaProducer;
 
     @Resource(name = "captchaProducerMath")
-    private Producer captchaProducerMath;
+    private PreRenderedCaptchaProducer captchaProducerMath;
 
     @Autowired
     private RedisCache redisCache;
     
     @Autowired
     private ISysConfigService configService;
+
     /**
      * 生成验证码
      */
@@ -64,9 +65,11 @@ public class CaptchaController
         String captchaType = RuoYiConfig.getCaptchaType();
         if ("math".equals(captchaType))
         {
-            String capText = captchaProducerMath.createText();
-            capStr = capText.substring(0, capText.lastIndexOf("@"));
-            code = capText.substring(capText.lastIndexOf("@") + 1);
+            // 数学题：生成 a+b=? 的验证码，图片显示 "a+b=?"，答案是 a+b 的结果
+            int a = (int) (Math.random() * 10);
+            int b = (int) (Math.random() * 10);
+            code = String.valueOf(a + b);
+            capStr = a + "+" + b + "=?";
             image = captchaProducerMath.createImage(capStr);
         }
         else if ("char".equals(captchaType))

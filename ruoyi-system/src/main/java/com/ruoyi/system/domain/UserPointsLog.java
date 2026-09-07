@@ -37,8 +37,8 @@ public class UserPointsLog implements Serializable
     @ApiModelProperty("变动后余额")
     private Integer pointsBalance;
 
-    /** 变动类型（sign_in-签到 post-发布动态 exchange-兑换商品 admin-管理员操作） */
-    @ApiModelProperty("变动类型（sign_in-签到 post-发布动态 exchange-兑换商品 admin-管理员操作）")
+    /** 变动类型（sign_in-签到 post-发布动态 exchange-兑换商品 admin-管理员操作 register-注册奖励 pet-完善宠物信息） */
+    @ApiModelProperty("变动类型（sign_in-签到 post-发布动态 exchange-兑换商品 admin-管理员操作 register-注册奖励 pet-完善宠物信息）")
     private String changeType;
 
     /** 关联业务ID */

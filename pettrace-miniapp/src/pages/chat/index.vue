@@ -4,13 +4,13 @@
     <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="nav-content">
         <view class="nav-left">
-          <text class="nav-title">AI 助手</text>
+          <text class="nav-title">养宠顾问</text>
           <view class="nav-status">
-            <view class="status-dot" :class="{ thinking: loading }" />
+            <view class="status-dot" :class="{ thinking: loading, offline: !adviserEnabled }" />
             <text class="status-text">{{ statusText }}</text>
           </view>
         </view>
-        <view class="nav-actions">
+        <view class="nav-actions" v-if="adviserEnabled">
           <view class="nav-action" @click="goHistory">
             <Icon name="file_text" :size="20" color="#fff" />
           </view>
@@ -21,8 +21,18 @@
       </view>
     </view>
 
+    <!-- 功能关闭态：升级维护提示 -->
+    <view v-if="!adviserEnabled" class="maintain-view">
+      <view class="maintain-icon-wrap">
+        <Icon name="message" :size="48" color="#FFB07A" />
+      </view>
+      <text class="maintain-title">养宠顾问升级中</text>
+      <text class="maintain-desc">功能正在打磨升级，敬请期待～</text>
+    </view>
+
     <!-- 消息列表 -->
     <scroll-view
+      v-if="adviserEnabled"
       scroll-y
       class="msg-scroll"
       :scroll-top="scrollTop"
@@ -34,7 +44,7 @@
         <view class="welcome-icon-wrap">
           <Icon name="message" :size="40" color="#FF7E3D" />
         </view>
-        <text class="welcome-title">你好，我是宠迹 AI 助手</text>
+        <text class="welcome-title">你好，我是宠迹养宠顾问</text>
         <text class="welcome-desc">关于养宠、训练、健康的问题，都可以问我</text>
 
         <view class="suggest-list">
@@ -97,7 +107,7 @@
     </scroll-view>
 
     <!-- 底部输入栏 -->
-    <view class="input-bar" :style="{ paddingBottom: safeBottom + 'px' }">
+    <view v-if="adviserEnabled" class="input-bar" :style="{ paddingBottom: safeBottom + 'px' }">
       <view class="input-wrap">
         <input
           class="input"
@@ -127,11 +137,15 @@ import { onShow } from '@dcloudio/uni-app';
 import Icon from '@/components/Icon.vue';
 import { useUserStore } from '@/store/user.js';
 import { fullImageUrl } from '@/utils/index.js';
-import { chatStream, clearChatHistory, getChatHistory, getSuggestWords } from '@/api/ai.js';
+import { chatStream, clearChatHistory, getChatHistory, getSuggestWords } from '@/api/adviser.js';
 import { showToast, showConfirm } from '@/utils/index.js';
+import { features, fetchFeatures } from '@/config/features.js';
 
 const userStore = useUserStore();
 const userInfo = computed(() => userStore.userInfo);
+
+// 养宠顾问功能开关（关闭时展示升级维护视图）
+const adviserEnabled = computed(() => features.adviserEnabled !== false);
 
 // 用户头像：有头像用完整 URL，没有则空串（模板会降级为图标）
 const userAvatar = computed(() => {
@@ -194,11 +208,15 @@ const scrollToBottom = () => {
 };
 
 // 多轮记忆：sessionId 持久化到本地，跨次进入保持上下文
-const SESSION_KEY = 'ai_chat_session_id';
-const RESTORE_KEY = 'ai_chat_restore';
+const SESSION_KEY = 'adviser_session_id';
+const RESTORE_KEY = 'adviser_restore';
 const sessionId = ref(uni.getStorageSync(SESSION_KEY) || '');
 
-const statusText = computed(() => (loading.value ? '思考中…' : '在线'));
+// 状态文案：功能关闭→维护中；问答进行中→回复中；空闲→在线
+const statusText = computed(() => {
+  if (!adviserEnabled.value) return '维护中';
+  return loading.value ? '回复中…' : '在线';
+});
 
 // 默认推荐词（接口失败时兜底）
 const DEFAULT_SUGGESTIONS = [];
@@ -218,10 +236,16 @@ const sendMessage = async (text) => {
   const content = (text ?? inputText.value).trim();
   if (!content || loading.value) return;
 
+  // 功能关闭拦截
+  if (!adviserEnabled.value) {
+    showToast('功能升级中，敬请期待');
+    return;
+  }
+
   // 未登录拦截
   const token = uni.getStorageSync('token');
   if (!token) {
-    showToast('请先登录后再使用 AI 对话');
+    showToast('请先登录后再提问');
     return;
   }
 
@@ -235,7 +259,7 @@ const sendMessage = async (text) => {
     scrollToBottom();
   });
 
-  // 记录当前助手气泡在数组中的下标，用于流式更新
+  // 记录当前回复气泡在数组中的下标，用于流式更新
   const assistantIdx = messages.value.length - 1;
 
   streamTask = chatStream({
@@ -372,11 +396,11 @@ const loadHistory = async () => {
 };
 
 /**
- * 获取AI推荐词
+ * 获取推荐提问词
  */
 const fetchSuggestions = async () => {
-  // 未登录时不调用接口，保留默认推荐词
-  if (!userStore.isLogin) return;
+  // 功能关闭或未登录时不调用接口，保留默认推荐词
+  if (!adviserEnabled.value || !userStore.isLogin) return;
   suggestionsLoading.value = true;
   try {
     const res = await getSuggestWords(4);
@@ -385,7 +409,7 @@ const fetchSuggestions = async () => {
     }
   } catch (err) {
     // 接口失败时保留默认推荐词，不阻断页面
-    console.error('获取AI推荐词失败:', err);
+    console.error('获取推荐词失败:', err);
   } finally {
     suggestionsLoading.value = false;
   }
@@ -393,6 +417,12 @@ const fetchSuggestions = async () => {
 
 // 页面显示时同步本地可能被其他页面修改的 sessionId 和用户头像
 onShow(async () => {
+  // 拉取功能开关（全局只请求一次）；关闭态下中断进行中的请求并跳过数据加载
+  await fetchFeatures();
+  if (!adviserEnabled.value) {
+    handleAbort();
+    return;
+  }
   sessionId.value = uni.getStorageSync(SESSION_KEY) || '';
   // 检测是否从"对话记录"跳转过来（需要恢复历史会话）
   const needRestore = uni.getStorageSync(RESTORE_KEY);
@@ -406,13 +436,13 @@ onShow(async () => {
   if (userStore.isLogin) {
     userStore.fetchUserInfo().catch(() => {});
   }
-  // 获取AI推荐词
+  // 获取推荐提问词
   fetchSuggestions();
 });
 
 // 监听登录/退出状态变化，自动更新头像显示和推荐词
 watch(() => userStore.isLogin, (isLogin) => {
-  if (isLogin) {
+  if (isLogin && adviserEnabled.value) {
     userStore.fetchUserInfo().catch(() => {});
     fetchSuggestions();
   }
@@ -429,6 +459,40 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100vh;
   background-color: #F5F6FA;
+}
+
+/* ========== 功能关闭态：升级维护提示 ========== */
+.maintain-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 60rpx;
+
+  .maintain-icon-wrap {
+    width: 140rpx;
+    height: 140rpx;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFF0E6, #FFE4CC);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32rpx;
+  }
+
+  .maintain-title {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #3D2B1D;
+    margin-bottom: 16rpx;
+  }
+
+  .maintain-desc {
+    font-size: 26rpx;
+    color: #A8A8B0;
+    text-align: center;
+  }
 }
 
 /* ========== 自定义导航栏 ========== */
@@ -473,6 +537,11 @@ onUnmounted(() => {
         background-color: #FBBF24;
         box-shadow: 0 0 8rpx rgba(251, 191, 36, 0.8);
         animation: pulse 1s infinite;
+      }
+
+      &.offline {
+        background-color: rgba(255, 255, 255, 0.55);
+        box-shadow: none;
       }
     }
 

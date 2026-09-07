@@ -1,0 +1,67 @@
+# =====================================================
+# 生产环境配置（application-prod.yml）
+# 对应 Maven profile: prod
+# 打包命令: mvn clean package -Pprod
+# =====================================================
+# 安全说明：所有敏感信息通过环境变量注入，不在此文件硬编码。
+# 部署前请在服务器上设置以下环境变量（参考 .env.prod.example）：
+#   MYSQL_PASSWORD  - MySQL 密码
+#   REDIS_PASSWORD  - Redis 密码
+#   JWT_SECRET      - JWT 令牌密钥
+#   WECHAT_APPID    - 微信小程序 AppID
+#   WECHAT_SECRET   - 微信小程序 AppSecret
+# =====================================================
+
+# 服务端口
+server:
+  port: 8080
+
+spring:
+  # 数据源（生产环境 - 同机部署走本地回环）
+  datasource:
+    druid:
+      master:
+        url: jdbc:mysql://127.0.0.1:3306/pet-profile?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USERNAME:root}
+        # 密码必须通过环境变量注入，不设默认值
+        password: ${MYSQL_PASSWORD}
+      # 生产环境关闭 Druid 监控台
+      statViewServlet:
+        enabled: false
+
+  # Redis（生产环境 - 同机部署走本地回环）
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    # 密码必须通过环境变量注入，不设默认值
+    password: ${REDIS_PASSWORD}
+
+  # 热部署（生产环境关闭）
+  devtools:
+    restart:
+      enabled: false
+
+# token 配置（生产环境必须通过环境变量覆盖）
+token:
+  secret: ${JWT_SECRET}
+
+# 微信小程序配置（生产环境通过环境变量注入）
+wechat:
+  miniapp:
+    appid: ${WECHAT_APPID}
+    secret: ${WECHAT_SECRET}
+
+# Swagger（生产环境关闭）
+swagger:
+  enabled: false
+
+# AI 对话服务（同机部署走本地回环）
+ai:
+  chat:
+    base-url: ${AI_CHAT_BASE_URL:http://127.0.0.1:3300}
+
+# 日志级别（生产环境调低）
+logging:
+  level:
+    com.ruoyi: warn
+    org.springframework: warn

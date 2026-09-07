@@ -6,9 +6,10 @@ spring:
         druid:
             # 主库数据源
             master:
-                url: jdbc:mysql://localhost:3307/pet-profile?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-                username: root
-                password: mysqltest
+                url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3307/pet-profile?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true}
+                username: ${MYSQL_USERNAME:root}
+                # 数据库密码（测试环境默认 mysqltest；生产环境必须通过环境变量 MYSQL_PASSWORD 覆盖）
+                password: ${MYSQL_PASSWORD:mysqltest}
             # 从库数据源
             slave:
                 # 从数据源开关/默认关闭
@@ -42,13 +43,14 @@ spring:
             webStatFilter: 
                 enabled: true
             statViewServlet:
-                enabled: true
+                # 生产环境关闭 Druid 监控台（可通过环境变量 DRUID_STAT_ENABLED:true 临时开启）
+                enabled: ${DRUID_STAT_ENABLED:false}
                 # 设置白名单，不填则允许所有访问
                 allow:
                 url-pattern: /druid/*
-                # 控制台管理用户名和密码
-                login-username: ruoyi
-                login-password: 123456
+                # 控制台管理用户名和密码（生产环境必须通过环境变量覆盖）
+                login-username: ${DRUID_USERNAME:ruoyi}
+                login-password: ${DRUID_PASSWORD:123456}
             filter:
                 stat:
                     enabled: true

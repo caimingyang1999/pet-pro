@@ -128,6 +128,7 @@ public class SysProfileController extends BaseController
         if (!file.isEmpty())
         {
             LoginUser loginUser = getLoginUser();
+            // avatar 返回值统一为 /profile/avatar/yyyy/MM/dd/xxx.xxx 相对路径，测试/生产通用
             String avatar = FileUploadUtils.upload(RuoYiConfig.getAvatarPath(), file, MimeTypeUtils.IMAGE_EXTENSION, true);
             if (userService.updateUserAvatar(loginUser.getUserId(), avatar))
             {
@@ -137,7 +138,13 @@ public class SysProfileController extends BaseController
                     FileUtils.deleteFile(RuoYiConfig.getProfile() + FileUtils.stripPrefix(oldAvatar));
                 }
                 AjaxResult ajax = AjaxResult.success();
+                // 三个字段都放一份，兼容：
+                // 1) Ruoyi 原生管理后台（读 imgUrl）
+                // 2) 小程序各上传封装（读 fileName / url）
                 ajax.put("imgUrl", avatar);
+                ajax.put("url", avatar);
+                ajax.put("fileName", avatar);
+                ajax.put("newFileName", FileUtils.getName(avatar));
                 // 更新缓存用户头像
                 loginUser.getUser().setAvatar(avatar);
                 tokenService.setLoginUser(loginUser);

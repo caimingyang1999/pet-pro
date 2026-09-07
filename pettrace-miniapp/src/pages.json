@@ -56,7 +56,7 @@
       "path": "pages/chat/index",
       "style": {
         "navigationStyle": "custom",
-        "navigationBarTitleText": "AI 助手",
+        "navigationBarTitleText": "养宠顾问",
         "navigationBarBackgroundColor": "#FF8C42",
         "navigationBarTextStyle": "white"
       }
@@ -64,7 +64,7 @@
     {
       "path": "pages/chat/history",
       "style": {
-        "navigationBarTitleText": "对话记录",
+        "navigationBarTitleText": "问答记录",
         "navigationBarBackgroundColor": "#FFFFFF",
         "navigationBarTextStyle": "black"
       }
@@ -138,6 +138,15 @@
       }
     },
     {
+      "path": "pages/mine/points",
+      "style": {
+        "navigationBarTitleText": "积分明细",
+        "enablePullDownRefresh": true,
+        "backgroundColor": "#F6F7FB",
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
       "path": "pages/common/webview",
       "style": {
         "navigationBarTitleText": "详情"
@@ -175,7 +184,7 @@
         "pagePath": "pages/chat/index",
         "iconPath": "static/tabbar/chat.png",
         "selectedIconPath": "static/tabbar/chat-active.png",
-        "text": "AI助手"
+        "text": "养宠顾问"
       },
       {
         "pagePath": "pages/mine/index",

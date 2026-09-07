@@ -1,83 +1,58 @@
 package com.ruoyi.framework.config;
 
-import java.util.Properties;
+import javax.annotation.PostConstruct;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import com.google.code.kaptcha.impl.DefaultKaptcha;
-import com.google.code.kaptcha.util.Config;
-import static com.google.code.kaptcha.Constants.*;
 
 /**
  * 验证码配置
- * 
+ * <p>
+ * 使用预渲染字符图片生成验证码，完全不依赖 AWT Font 渲染，
+ * 确保 Linux 服务器无 fontconfig 环境下也能正常工作。
+ * </p>
+ *
  * @author ruoyi
  */
 @Configuration
 public class CaptchaConfig
 {
-    @Bean(name = "captchaProducer")
-    public DefaultKaptcha getKaptchaBean()
+    @PostConstruct
+    public void init()
     {
-        DefaultKaptcha defaultKaptcha = new DefaultKaptcha();
-        Properties properties = new Properties();
-        // 是否有边框 默认为true 我们可以自己设置yes，no
-        properties.setProperty(KAPTCHA_BORDER, "yes");
-        // 验证码文本字符颜色 默认为Color.BLACK
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_FONT_COLOR, "black");
-        // 验证码图片宽度 默认为200
-        properties.setProperty(KAPTCHA_IMAGE_WIDTH, "160");
-        // 验证码图片高度 默认为50
-        properties.setProperty(KAPTCHA_IMAGE_HEIGHT, "60");
-        // 验证码文本字符大小 默认为40
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_FONT_SIZE, "38");
-        // KAPTCHA_SESSION_KEY
-        properties.setProperty(KAPTCHA_SESSION_CONFIG_KEY, "kaptchaCode");
-        // 验证码文本字符长度 默认为5
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_CHAR_LENGTH, "4");
-        // 验证码文本字体样式 默认为new Font("Arial", 1, fontSize), new Font("Courier", 1, fontSize)
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_FONT_NAMES, "Arial,Courier");
-        // 图片样式 水纹com.google.code.kaptcha.impl.WaterRipple 鱼眼com.google.code.kaptcha.impl.FishEyeGimpy 阴影com.google.code.kaptcha.impl.ShadowGimpy
-        properties.setProperty(KAPTCHA_OBSCURIFICATOR_IMPL, "com.google.code.kaptcha.impl.ShadowGimpy");
-        Config config = new Config(properties);
-        defaultKaptcha.setConfig(config);
-        return defaultKaptcha;
+        // 强制开启 headless 模式（双重保险）
+        System.setProperty("java.awt.headless", "true");
     }
 
-    @Bean(name = "captchaProducerMath")
-    public DefaultKaptcha getKaptchaBeanMath()
+    /**
+     * 普通字符验证码 Producer
+     */
+    @Bean(name = "captchaProducer")
+    public PreRenderedCaptchaProducer getKaptchaBean()
     {
-        DefaultKaptcha defaultKaptcha = new DefaultKaptcha();
-        Properties properties = new Properties();
-        // 是否有边框 默认为true 我们可以自己设置yes，no
-        properties.setProperty(KAPTCHA_BORDER, "yes");
-        // 边框颜色 默认为Color.BLACK
-        properties.setProperty(KAPTCHA_BORDER_COLOR, "105,179,90");
-        // 验证码文本字符颜色 默认为Color.BLACK
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_FONT_COLOR, "blue");
-        // 验证码图片宽度 默认为200
-        properties.setProperty(KAPTCHA_IMAGE_WIDTH, "160");
-        // 验证码图片高度 默认为50
-        properties.setProperty(KAPTCHA_IMAGE_HEIGHT, "60");
-        // 验证码文本字符大小 默认为40
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_FONT_SIZE, "35");
-        // KAPTCHA_SESSION_KEY
-        properties.setProperty(KAPTCHA_SESSION_CONFIG_KEY, "kaptchaCodeMath");
-        // 验证码文本生成器
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_IMPL, "com.ruoyi.framework.config.KaptchaTextCreator");
-        // 验证码文本字符间距 默认为2
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_CHAR_SPACE, "3");
-        // 验证码文本字符长度 默认为5
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_CHAR_LENGTH, "6");
-        // 验证码文本字体样式 默认为new Font("Arial", 1, fontSize), new Font("Courier", 1, fontSize)
-        properties.setProperty(KAPTCHA_TEXTPRODUCER_FONT_NAMES, "Arial,Courier");
-        // 验证码噪点颜色 默认为Color.BLACK
-        properties.setProperty(KAPTCHA_NOISE_COLOR, "white");
-        // 干扰实现类
-        properties.setProperty(KAPTCHA_NOISE_IMPL, "com.google.code.kaptcha.impl.NoNoise");
-        // 图片样式 水纹com.google.code.kaptcha.impl.WaterRipple 鱼眼com.google.code.kaptcha.impl.FishEyeGimpy 阴影com.google.code.kaptcha.impl.ShadowGimpy
-        properties.setProperty(KAPTCHA_OBSCURIFICATOR_IMPL, "com.google.code.kaptcha.impl.ShadowGimpy");
-        Config config = new Config(properties);
-        defaultKaptcha.setConfig(config);
-        return defaultKaptcha;
+        PreRenderedCaptchaProducer producer = new PreRenderedCaptchaProducer();
+        producer.setWidth(160);
+        producer.setHeight(60);
+        producer.setCharLength(4);
+        producer.setCharSpacing(6);
+        producer.init();
+        return producer;
+    }
+
+    /**
+     * 数学验证码 Producer（同普通验证码，数学题逻辑在 Controller 中处理）
+     * <p>
+     * 数学题格式形如 12+5=?（最多 6 个字符），因此加宽画布避免字符被截断。
+     * </p>
+     */
+    @Bean(name = "captchaProducerMath")
+    public PreRenderedCaptchaProducer getKaptchaBeanMath()
+    {
+        PreRenderedCaptchaProducer producer = new PreRenderedCaptchaProducer();
+        producer.setWidth(230);
+        producer.setHeight(60);
+        producer.setCharLength(4);
+        producer.setCharSpacing(6);
+        producer.init();
+        return producer;
     }
 }

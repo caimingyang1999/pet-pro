@@ -116,8 +116,16 @@ public class SecurityConfig
                     .antMatchers("/api/v1/register").permitAll()
                     // 用户账号密码登录（无需验证码），公开接口
                     .antMatchers("/api/v1/user/uertlogin").permitAll()
+                    // 通用文件上传接口（管理后台需要登录，小程序端通过token访问）
+                    .antMatchers("/common/upload", "/common/uploads", "/common/download", "/common/download/resource").permitAll()
                     // 静态资源，可匿名访问
-                    .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
+                    // 图片上传目录支持多套前缀（管理后台 dev-api/prod-api、小程序端 /api/v1），
+                    // 与 ResourcesConfig.addResourceHandlers 保持一致，避免被 Spring Security 拦截
+                    .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js",
+                            "/profile/**",
+                            "/dev-api/profile/**",
+                            "/prod-api/profile/**",
+                            "/api/v1/profile/**").permitAll()
                     .antMatchers("/swagger-ui.html", "/swagger-resources/**", "/webjars/**", "/*/api-docs", "/druid/**").permitAll()
                     // 除上面外的所有请求全部需要鉴权认证
                     .anyRequest().authenticated();

@@ -78,9 +78,10 @@ public class CommonController
         {
             // 上传文件路径
             String filePath = RuoYiConfig.getUploadPath();
-            // 上传并返回新文件名称
+            // 上传并返回新文件名称（统一为 /profile/upload/yyyy/MM/dd/xxx.xxx 相对路径，避免携带域名导致跨环境失效）
             String fileName = FileUploadUtils.upload(filePath, file);
-            String url = serverConfig.getUrl() + fileName;
+            // 相对路径形式返回给前端：前端通过 VUE_APP_BASE_API / SERVER_BASE 自行拼域名，测试/生产通用
+            String url = fileName;
             AjaxResult ajax = AjaxResult.success();
             ajax.put("url", url);
             ajax.put("fileName", fileName);
@@ -110,10 +111,9 @@ public class CommonController
             List<String> originalFilenames = new ArrayList<String>();
             for (MultipartFile file : files)
             {
-                // 上传并返回新文件名称
+                // 上传并返回新文件名称（相对路径，与单文件上传保持一致）
                 String fileName = FileUploadUtils.upload(filePath, file);
-                String url = serverConfig.getUrl() + fileName;
-                urls.add(url);
+                urls.add(fileName);
                 fileNames.add(fileName);
                 newFileNames.add(FileUtils.getName(fileName));
                 originalFilenames.add(file.getOriginalFilename());

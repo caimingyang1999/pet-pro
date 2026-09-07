@@ -119,4 +119,22 @@ public class AdminUserController extends BaseController
         // type=admin，relateId 记录操作管理员ID
         return toAjax(userPointsService.addPoints(userId, log.getPointsChange(), "admin", getUserId()));
     }
+
+    /**
+     * 用户积分明细列表
+     *
+     * @param userId 用户ID
+     * @return 积分变动记录分页列表
+     */
+    @ApiOperation("用户积分明细")
+    @Log(title = "用户管理", businessType = BusinessType.OTHER)
+    @GetMapping("/{userId}/points/records")
+    public TableDataInfo pointsRecords(
+            @ApiParam(name = "userId", value = "用户ID", required = true)
+            @PathVariable Long userId)
+    {
+        startPage();
+        List<UserPointsLog> list = userPointsService.getPointsLog(userId);
+        return getDataTable(list);
+    }
 }

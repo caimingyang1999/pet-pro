@@ -26,7 +26,7 @@
             <Icon name="message" :size="18" color="#FF7E3D" />
           </view>
           <view class="session-info">
-            <text class="session-title">{{ s.sessionTitle || '未命名对话' }}</text>
+            <text class="session-title">{{ s.sessionTitle || '未命名提问' }}</text>
             <view class="session-meta">
               <text class="meta-text">{{ s.messageCount || 0 }} 条消息</text>
               <text class="meta-dot">·</text>
@@ -42,11 +42,11 @@
         <view class="empty-icon-wrap">
           <Icon name="message" :size="64" color="#FFD4A8" />
         </view>
-        <text class="empty-title">还没有对话记录</text>
-        <text class="empty-desc">去和 AI 助手聊聊吧</text>
+        <text class="empty-title">还没有问答记录</text>
+        <text class="empty-desc">有养宠问题，随时来问</text>
         <view class="empty-btn" @click="goChat">
           <Icon name="plus" :size="16" color="#fff" />
-          <text>开始对话</text>
+          <text>开始提问</text>
         </view>
       </view>
 
@@ -85,7 +85,7 @@
       <view class="msg-actions">
         <view class="action-btn primary" @click="continueChat">
           <Icon name="chat" :size="16" color="#fff" />
-          <text>继续对话</text>
+          <text>继续提问</text>
         </view>
         <view class="action-btn" @click="backToList">
           <Icon name="chevron_left" :size="16" color="#FF7E3D" />
@@ -103,7 +103,9 @@ import LoadingState from '@/components/LoadingState.vue';
 import Icon from '@/components/Icon.vue';
 import { useUserStore } from '@/store/user.js';
 import { fullImageUrl } from '@/utils/index.js';
-import { getSessionList, getChatHistory } from '@/api/ai.js';
+import { getSessionList, getChatHistory } from '@/api/adviser.js';
+import { features, fetchFeatures } from '@/config/features.js';
+import { showToast } from '@/utils/index.js';
 
 const userStore = useUserStore();
 const userInfo = computed(() => userStore.userInfo);
@@ -168,8 +170,8 @@ const openSession = async (session) => {
  * 继续对话：把 sessionId 写入本地后跳转到对话页
  * 同时写入恢复标记，让对话页加载历史消息并清空当前对话
  */
-const RESTORE_KEY = 'ai_chat_restore';
-const SESSION_KEY = 'ai_chat_session_id';
+const RESTORE_KEY = 'adviser_restore';
+const SESSION_KEY = 'adviser_session_id';
 
 const continueChat = () => {
   if (!activeSession.value) return;
@@ -207,8 +209,22 @@ const formatTime = (time) => {
   return m ? `${m[1]}-${m[2]} ${m[3]}:${m[4]}` : time;
 };
 
-onShow(() => {
-  // 从对话页返回时刷新列表（可能新增了会话）
+onShow(async () => {
+  // 拉取功能开关；功能关闭时提示并返回上一页
+  await fetchFeatures();
+  if (features.adviserEnabled === false) {
+    showToast('功能升级中，敬请期待');
+    setTimeout(() => {
+      const pages = getCurrentPages();
+      if (pages.length > 1) {
+        uni.navigateBack();
+      } else {
+        uni.switchTab({ url: '/pages/index/index' });
+      }
+    }, 800);
+    return;
+  }
+  // 从问答页返回时刷新列表（可能新增了会话）
   if (!activeSession.value) fetchSessions();
 });
 </script>

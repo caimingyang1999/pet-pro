@@ -20,6 +20,7 @@ import com.ruoyi.system.domain.dto.WxPhoneLoginDTO;
 import com.ruoyi.system.domain.vo.WxLoginVO;
 import com.ruoyi.system.mapper.SysUserMapper;
 import com.ruoyi.system.service.ISysUserService;
+import com.ruoyi.system.service.IUserPointsService;
 import com.ruoyi.web.service.IWxUserService;
 
 /**
@@ -46,6 +47,12 @@ public class WxUserServiceImpl implements IWxUserService
 
     @Resource
     private ISysUserService userService;
+
+    @Resource
+    private IUserPointsService userPointsService;
+
+    /** 注册赠送积分 */
+    private static final int REGISTER_REWARD_POINTS = 20;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -229,6 +236,9 @@ public class WxUserServiceImpl implements IWxUserService
             log.warn("为微信用户分配默认角色失败，userId={}", user.getUserId(), e);
         }
 
+        // 发放注册奖励积分（记录积分变动日志）
+        userPointsService.addPoints(user.getUserId(), REGISTER_REWARD_POINTS, "register", null);
+
         return sysUserMapper.selectUserById(user.getUserId());
     }
 
@@ -261,6 +271,9 @@ public class WxUserServiceImpl implements IWxUserService
         {
             log.warn("为微信用户分配默认角色失败，userId={}", user.getUserId(), e);
         }
+
+        // 发放注册奖励积分（记录积分变动日志）
+        userPointsService.addPoints(user.getUserId(), REGISTER_REWARD_POINTS, "register", null);
 
         return sysUserMapper.selectUserById(user.getUserId());
     }

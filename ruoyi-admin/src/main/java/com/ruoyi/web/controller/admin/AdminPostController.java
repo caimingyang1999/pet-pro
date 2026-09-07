@@ -80,6 +80,7 @@ public class AdminPostController extends BaseController
 
     /**
      * 审核动态（通过/拒绝）
+     * 通过时发放积分，拒绝时不发放
      *
      * @param postId 动态ID
      * @param post   审核信息（status-1通过 2-拒绝）
@@ -97,9 +98,18 @@ public class AdminPostController extends BaseController
         {
             return AjaxResult.error("审核状态非法，仅支持 1-通过 2-拒绝");
         }
-        LambdaUpdateWrapper<PetPost> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(PetPost::getId, postId).set(PetPost::getStatus, post.getStatus());
-        return toAjax(postService.update(wrapper));
+        if ("1".equals(post.getStatus()))
+        {
+            // 审核通过：更新状态并发放积分
+            return toAjax(postService.approvePost(postId));
+        }
+        else
+        {
+            // 审核拒绝：仅更新状态
+            LambdaUpdateWrapper<PetPost> wrapper = new LambdaUpdateWrapper<>();
+            wrapper.eq(PetPost::getId, postId).set(PetPost::getStatus, post.getStatus());
+            return toAjax(postService.update(wrapper));
+        }
     }
 
     /**

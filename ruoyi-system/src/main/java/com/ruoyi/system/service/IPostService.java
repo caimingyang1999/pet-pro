@@ -41,12 +41,20 @@ public interface IPostService extends IService<PetPost>
     List<PetPost> getPostListAdmin(String status, Date beginTime, Date endTime);
 
     /**
-     * 发布动态（增加积分）
+     * 发布动态（待审核，暂不发放积分，审核通过后发放）
      *
      * @param post 动态信息
      * @return 结果
      */
     boolean addPost(PetPost post);
+
+    /**
+     * 审核通过动态（发放积分，需防重复发放）
+     *
+     * @param postId 动态ID
+     * @return 结果
+     */
+    boolean approvePost(Long postId);
 
     /**
      * 删除动态（校验是否为发布者）

@@ -6,7 +6,7 @@ import { BASE_URL } from '@/api/request.js';
  * 兼容微信小程序（uni.request + enableChunked + onChunkReceived）
  * 与 H5（fetch + ReadableStream）两种环境。
  *
- * 后端 AI 对话 SSE 事件格式：
+ * 后端问答 SSE 事件格式：
  *   data: {"type":"chunk","content":"xxx","sessionId":"pet-1"}      // 增量内容
  *   data: {"type":"complete","data":{success,reply,sessionId},...}  // 整轮结束
  *   data: {"type":"error","message":"xxx","sessionId":"pet-1"}      // 错误
@@ -236,7 +236,7 @@ function parseEvent(rawEvent, callbacks) {
 }
 
 /**
- * 发起 AI 流式对话
+ * 发起流式问答
  * @param {Object} options
  * @param {string} options.message - 用户本轮输入
  * @param {string} [options.sessionId] - 会话 ID，不传则服务端创建新会话
@@ -246,9 +246,9 @@ function parseEvent(rawEvent, callbacks) {
  * @param {Function} options.onDone - 流彻底结束回调（无论成功失败）
  * @returns {{ abort: Function }} 可调用 abort() 取消请求
  */
-export function aiChatStream({ message, sessionId, onChunk, onComplete, onError, onDone }) {
+export function adviserChatStream({ message, sessionId, onChunk, onComplete, onError, onDone }) {
   const token = uni.getStorageSync('token') || '';
-  const url = `${BASE_URL}/ai/chat`;
+  const url = `${BASE_URL}/adviser/chat`;
   const data = { message };
   if (sessionId) data.sessionId = sessionId;
 

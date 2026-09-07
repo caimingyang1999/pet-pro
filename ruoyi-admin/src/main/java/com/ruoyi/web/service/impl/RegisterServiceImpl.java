@@ -23,6 +23,7 @@ import com.ruoyi.system.domain.vo.RegisterVO;
 import com.ruoyi.system.mapper.SysRoleMapper;
 import com.ruoyi.system.mapper.SysUserMapper;
 import com.ruoyi.system.mapper.SysUserRoleMapper;
+import com.ruoyi.system.service.IUserPointsService;
 import com.ruoyi.web.service.IRegisterService;
 
 /**
@@ -53,6 +54,9 @@ public class RegisterServiceImpl implements IRegisterService
 
     @Resource
     private SysUserRoleMapper userRoleMapper;
+
+    @Resource
+    private IUserPointsService userPointsService;
 
     @Resource
     private TokenService tokenService;
@@ -97,7 +101,10 @@ public class RegisterServiceImpl implements IRegisterService
             // 4. 分配普通用户角色
             assignCommonRole(newUser.getUserId());
 
-            // 5. 重新查询用户完整信息（含角色）
+            // 5. 发放注册奖励积分（记录积分变动日志）
+            userPointsService.addPoints(newUser.getUserId(), REGISTER_REWARD_POINTS, "register", null);
+
+            // 6. 重新查询用户完整信息（含角色）
             SysUser fullUser = userMapper.selectUserById(newUser.getUserId());
             if (fullUser == null)
             {
@@ -174,7 +181,7 @@ public class RegisterServiceImpl implements IRegisterService
         user.setPassword(SecurityUtils.encryptPassword(dto.getPassword()));
         user.setStatus("0");
         user.setDelFlag("0");
-        user.setPoints(REGISTER_REWARD_POINTS);
+        user.setPoints(0);
         user.setLoginType("sys");
         return user;
     }

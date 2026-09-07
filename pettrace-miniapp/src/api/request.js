@@ -2,7 +2,7 @@ import { useUserStore } from '@/store/user.js';
 
 // 服务器根地址，用于非 /api/v1 前缀的接口（如文件上传 /system/user/profile/avatar、/common/upload 等）
 // 通过根目录 .env 文件配置（VITE_DEV_SERVER_BASE / VITE_PROD_SERVER_BASE + VITE_API_PREFIX）
-// 真机调试时把 VITE_DEV_SERVER_BASE 改为电脑的局域网 IP，例如 http://192.168.1.7:8080
+// 真机调试时把 VITE_DEV_SERVER_BASE 改为电脑的局域网 IP，例如 http://192.168.1.6:8080
 // （localhost 在手机上指向手机自己，会导致 ERR_CONNECTION_REFUSED）
 const {
   VITE_DEV_SERVER_BASE,
@@ -11,8 +11,8 @@ const {
   PROD,
 } = import.meta.env;
 export const SERVER_BASE = PROD
-  ? (VITE_PROD_SERVER_BASE || 'http://192.168.1.7:8080')
-  : (VITE_DEV_SERVER_BASE || 'http://192.168.1.7:8080');
+  ? (VITE_PROD_SERVER_BASE || 'http://192.168.1.6:8080')
+  : (VITE_DEV_SERVER_BASE || 'http://192.168.1.6:8080');
 // API 接口完整地址 = 服务器根地址 + 接口前缀
 export const BASE_URL = `${SERVER_BASE}${VITE_API_PREFIX || '/api/v1'}`;
 
@@ -131,3 +131,54 @@ export const del = (url, data = {}) => {
 };
 
 export default request;
+
+/**
+ * 从 RuoYi 上传接口响应中提取图片相对路径
+ * 兼容字段（按优先级）：fileName > url > imgUrl > data.fileName / data.url / data.imgUrl
+ * 并做安全兜底：
+ *   - 若后端返回了"服务器磁盘绝对路径"（/home/.../uploadPath/... 或 D:\\...），自动归一化为 /profile/...
+ *   - 前后空格清除
+ *   - blob:/data: 等前端临时 URL 原样返回
+ *   - http(s) 绝对 URL 原样返回（前端使用 fullImageUrl 时会重新拼域名）
+ */
+export function pickUploadedPath(data) {
+  if (!data) return '';
+  const candidates = [
+    data.fileName,
+    data.url,
+    data.imgUrl,
+    data.data?.fileName,
+    data.data?.url,
+    data.data?.imgUrl,
+  ];
+  let raw = '';
+  for (const v of candidates) {
+    if (typeof v === 'string' && v.trim()) {
+      raw = v.trim();
+      break;
+    }
+  }
+  if (!raw) return '';
+  if (raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  if (raw.startsWith('/profile')) return raw;
+
+  // 兜底：后端返回磁盘绝对路径（例如 /home/ruoyi/uploadPath/upload/2026/...
+  // 或 Windows D:\ruoyi\uploadPath\upload\2026\...）时，
+  // 找到 upload / avatar / import / download 子目录那段，归一化为 /profile/xxx
+  const norm = raw.replace(/\\/g, '/');
+  const segs = ['/upload/', '/avatar/', '/import/', '/download/'];
+  for (const seg of segs) {
+    const idx = norm.indexOf(seg);
+    if (idx !== -1) {
+      return '/profile' + norm.slice(idx);
+    }
+  }
+  // 最后再兜底：如果没有分段但却是 /home/... 这种本地路径，无法解析则返回空（让前端提示失败）
+  if (norm.startsWith('/') || /^[A-Za-z]:/.test(norm)) {
+    console.warn('[upload] 返回了无法解析的本地路径:', raw);
+    return '';
+  }
+  // 否则视为相对路径，确保以 / 开头
+  return norm.startsWith('/') ? norm : '/' + norm;
+}

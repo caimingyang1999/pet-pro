@@ -56,7 +56,12 @@ public class FilterConfig
         FilterRegistrationBean registration = new FilterRegistrationBean();
         registration.setDispatcherTypes(DispatcherType.REQUEST);
         registration.setFilter(new RefererFilter());
+        // 防盗链 Filter 需覆盖三端的图片访问前缀，与 ResourcesConfig、SecurityConfig 保持一致：
+        // /profile/*、/dev-api/profile/*、/prod-api/profile/*、/api/v1/profile/*
         registration.addUrlPatterns(Constants.RESOURCE_PREFIX + "/*");
+        registration.addUrlPatterns("/dev-api" + Constants.RESOURCE_PREFIX + "/*");
+        registration.addUrlPatterns("/prod-api" + Constants.RESOURCE_PREFIX + "/*");
+        registration.addUrlPatterns("/api/v1" + Constants.RESOURCE_PREFIX + "/*");
         registration.setName("refererFilter");
         registration.setOrder(FilterRegistrationBean.HIGHEST_PRECEDENCE);
         Map<String, String> initParameters = new HashMap<String, String>();

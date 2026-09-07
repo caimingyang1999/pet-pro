@@ -244,6 +244,25 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- 环境 profiles：dev=测试环境（默认）、prod=生产环境 -->
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <profiles.active>dev</profiles.active>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <properties>
+                <profiles.active>prod</profiles.active>
+            </properties>
+        </profile>
+    </profiles>
+
     <modules>
         <module>ruoyi-admin</module>
         <module>ruoyi-framework</module>
