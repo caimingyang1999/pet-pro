@@ -197,4 +197,13 @@ public interface SysUserMapper
      * @return 结果
      */
     public int insertSysUser(SysUser user);
+
+    /**
+     * 按昵称模糊搜索用户（用于搜索用户功能）
+     *
+     * @param keyword 昵称关键词
+     * @param limit   返回条数上限
+     * @return 用户列表
+     */
+    public List<SysUser> selectUsersByNickNameLike(@Param("keyword") String keyword, @Param("limit") Integer limit);
 }

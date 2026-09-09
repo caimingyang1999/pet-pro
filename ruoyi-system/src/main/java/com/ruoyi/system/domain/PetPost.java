@@ -43,6 +43,14 @@ public class PetPost implements Serializable
     @ApiModelProperty("图片列表（JSON数组，以字符串形式存储）")
     private String images;
 
+    /** 视频/实况照片地址 */
+    @ApiModelProperty("视频/实况照片地址")
+    private String videoUrl;
+
+    /** 视频封面图地址 */
+    @ApiModelProperty("视频封面图地址")
+    private String videoCover;
+
     /** 审核状态（0-待审核 1-通过 2-拒绝） */
     @ApiModelProperty("审核状态（0-待审核 1-通过 2-拒绝）")
     private String status;
@@ -88,4 +96,14 @@ public class PetPost implements Serializable
     @ApiModelProperty("关联宠物名称")
     @TableField(exist = false)
     private String petName;
+
+    /** 当前用户是否已点赞（关联查询） */
+    @ApiModelProperty("当前用户是否已点赞")
+    @TableField(exist = false)
+    private Boolean isLike;
+
+    /** 发布者是否是当前用户已关注的人（关注 tab 用） */
+    @ApiModelProperty("发布者是否已关注")
+    @TableField(exist = false)
+    private Boolean isFollowed;
 }

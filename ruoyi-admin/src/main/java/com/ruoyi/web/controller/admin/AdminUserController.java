@@ -59,8 +59,10 @@ public class AdminUserController extends BaseController
     /**
      * 用户列表（含宠物数量、动态数量、积分）
      *
-     * @param userName 用户账号
+     * @param userName    用户账号
+     * @param nickName    用户昵称
      * @param phonenumber 手机号码
+     * @param keyword     关键字（模糊匹配 用户名/昵称/手机号）
      * @return 用户分页列表
      */
     @ApiOperation("用户列表")
@@ -68,12 +70,24 @@ public class AdminUserController extends BaseController
     @GetMapping
     public TableDataInfo list(
             @ApiParam(name = "userName", value = "用户账号") @RequestParam(required = false) String userName,
-            @ApiParam(name = "phonenumber", value = "手机号码") @RequestParam(required = false) String phonenumber)
+            @ApiParam(name = "nickName", value = "用户昵称") @RequestParam(required = false) String nickName,
+            @ApiParam(name = "phonenumber", value = "手机号码") @RequestParam(required = false) String phonenumber,
+            @ApiParam(name = "keyword", value = "关键字（模糊匹配 用户名/昵称/手机号）") @RequestParam(required = false) String keyword)
     {
         startPage();
         SysUser query = new SysUser();
         query.setUserName(userName);
+        query.setNickName(nickName);
         query.setPhonenumber(phonenumber);
+        // keyword 通过 params 传递，Mapper 中用 OR 匹配 userName/nickName/phonenumber
+        if (keyword != null && !keyword.isEmpty())
+        {
+            if (query.getParams() == null)
+            {
+                query.setParams(new java.util.HashMap<>());
+            }
+            query.getParams().put("keyword", keyword);
+        }
         List<SysUser> list = sysUserService.selectUserList(query);
         long total = new PageInfo<>(list).getTotal();
 
@@ -116,8 +130,8 @@ public class AdminUserController extends BaseController
         {
             return AjaxResult.error("积分变动值不能为空或0");
         }
-        // type=admin，relateId 记录操作管理员ID
-        return toAjax(userPointsService.addPoints(userId, log.getPointsChange(), "admin", getUserId()));
+        // type=admin，relateId 记录操作管理员ID，remark 记录操作原因
+        return toAjax(userPointsService.addPoints(userId, log.getPointsChange(), "admin", getUserId(), log.getRemark()));
     }
 
     /**

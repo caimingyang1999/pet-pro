@@ -1,5 +1,6 @@
 package com.ruoyi.system.service.impl;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import javax.annotation.Resource;
@@ -54,13 +55,29 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
      *
      * @param userId   用户ID
      * @param points   变动积分（正数增加，负数扣减）
-     * @param type     变动类型（sign_in-签到 post-发布动态 exchange-兑换商品 admin-管理员操作 register-注册奖励 pet-完善宠物信息）
+     * @param type     变动类型
      * @param relateId 关联业务ID
      * @return 结果
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public boolean addPoints(Long userId, Integer points, String type, Long relateId)
+    {
+        return addPoints(userId, points, type, relateId, null);
+    }
+
+    /**
+     * 积分变动记录（带备注）
+     *
+     * @param userId   用户ID
+     * @param points   变动积分（正数增加，负数扣减）
+     * @param type     变动类型
+     * @param relateId 关联业务ID
+     * @param remark   备注信息
+     * @return 结果
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean addPoints(Long userId, Integer points, String type, Long relateId, String remark)
     {
         // 1. 查询用户信息
         com.ruoyi.common.core.domain.entity.SysUser user = sysUserMapper.selectUserById(userId);
@@ -96,6 +113,7 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
         log.setPointsBalance(updatedUser.getPoints());
         log.setChangeType(type);
         log.setRelateId(relateId);
+        log.setRemark(remark);
         baseMapper.insert(log);
 
         return true;
@@ -127,7 +145,8 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
     @Transactional(rollbackFor = Exception.class)
     public SignInVO signIn(Long userId)
     {
-        Date today = DateUtils.getNowDate();
+        // 取今日零点 Date，与数据库 DATE 列精确匹配
+        Date today = getTodayDate();
         // 1. 查询今日是否已签到
         LambdaQueryWrapper<UserSignIn> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSignIn::getUserId, userId)
@@ -174,7 +193,7 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
     @Override
     public SignInVO getSignInStatus(Long userId)
     {
-        Date today = DateUtils.getNowDate();
+        Date today = getTodayDate();
         LambdaQueryWrapper<UserSignIn> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSignIn::getUserId, userId)
                .eq(UserSignIn::getSignDate, today);
@@ -194,5 +213,19 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
         com.ruoyi.common.core.domain.entity.SysUser user = sysUserMapper.selectUserById(userId);
         vo.setPointsBalance(user != null && user.getPoints() != null ? user.getPoints() : 0);
         return vo;
+    }
+
+    /**
+     * 获取今日零点 Date（清除时分秒），用于与数据库 DATE 类型列精确比较
+     */
+    private Date getTodayDate()
+    {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Date());
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        return cal.getTime();
     }
 }

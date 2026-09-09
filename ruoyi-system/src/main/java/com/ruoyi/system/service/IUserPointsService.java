@@ -32,6 +32,18 @@ public interface IUserPointsService extends IService<UserPointsLog>
     boolean addPoints(Long userId, Integer points, String type, Long relateId);
 
     /**
+     * 积分变动记录（带备注）
+     *
+     * @param userId   用户ID
+     * @param points   变动积分（正数增加，负数扣减）
+     * @param type     变动类型
+     * @param relateId 关联业务ID
+     * @param remark   备注信息
+     * @return 结果
+     */
+    boolean addPoints(Long userId, Integer points, String type, Long relateId, String remark);
+
+    /**
      * 检查用户是否已领取过指定类型的积分奖励（用于一次性奖励防重复发放）
      *
      * @param userId 用户ID

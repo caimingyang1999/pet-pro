@@ -1,5 +1,16 @@
 <template>
   <view class="mine-page">
+    <!-- 自定义导航栏（固定顶部） -->
+    <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <view class="nav-content">
+        <view class="nav-left" />
+        <view class="nav-center">
+          <text class="nav-title">我的</text>
+        </view>
+        <view class="nav-right" />
+      </view>
+    </view>
+
     <!-- ========== 已登录状态 ========== -->
     <scroll-view
       v-if="isLogin"
@@ -10,8 +21,8 @@
       @refresherrefresh="onRefresh"
       @scrolltolower="() => {}"
     >
-      <!-- 状态栏占位 -->
-      <view :style="{ height: statusBarHeight + 'px' }" />
+      <!-- 顶部占位：避开状态栏 + 导航栏 -->
+      <view :style="{ height: navBarHeight + 'px' }" />
 
       <!-- 1. 顶部用户卡片 -->
       <view class="user-card-wrap">
@@ -66,6 +77,14 @@
                 <text class="stat-value">{{ postCount }}</text>
                 <text class="stat-label">动态</text>
               </view>
+              <view class="stat-divider" />
+              <view class="stat-item" @click="goFollows">
+                <text class="stat-value">{{ followCount }}</text>
+                <text class="stat-label">关注</text>
+              </view>
+            </view>
+            <view class="sub-stats-row">
+              <text class="sub-stat" @click="goFollows('follower')">粉丝 {{ followerCount }}</text>
             </view>
           </view>
         </view>
@@ -110,6 +129,8 @@
 
     <!-- ========== 未登录状态 ========== -->
     <view v-else class="login-guide-page">
+      <!-- 顶部占位 -->
+      <view :style="{ height: navBarHeight + 'px' }" />
       <view class="guide-content">
         <view class="guide-logo-wrap">
           <view class="guide-logo-ring">
@@ -163,6 +184,7 @@ import { pickUploadedPath } from '@/api/request.js';
 import { getOrderList } from '@/api/shop.js';
 import { getMyPosts } from '@/api/post.js';
 import { getSignInStatus, signIn } from '@/api/user.js';
+import { getFollowCount } from '@/api/follow.js';
 import { showToast, showLoading, hideLoading } from '@/utils/index.js';
 import { features } from '@/config/features.js';
 
@@ -173,14 +195,20 @@ const userInfo = computed(() => userStore.userInfo);
 const refreshing = ref(false);
 const orderCount = ref(0);
 const postCount = ref(0);
+const followCount = ref(0);
+const followerCount = ref(0);
 const hasSigned = ref(false); // 今日是否已签到
 const signInLoading = ref(false); // 签到按钮防重复点击
 
 const statusBarHeight = ref(20);
+const navBarHeight = ref(64); // 默认状态栏20 + 导航栏44
 // #ifdef MP-WEIXIN
 try {
   const sysInfo = uni.getSystemInfoSync();
   statusBarHeight.value = sysInfo.statusBarHeight || 20;
+  // 获取胶囊按钮位置，底部作为导航栏占位高度
+  const menuRect = uni.getMenuButtonBoundingClientRect();
+  navBarHeight.value = menuRect.bottom + 8; // 胶囊底部 + 8px 间距
 } catch (e) {}
 // #endif
 
@@ -188,9 +216,10 @@ const serviceMenu = reactive([
   { key: 'pets', title: '我的宠物', path: '/pages/pet/list', needLogin: true },
   { key: 'chats', title: '问答记录', path: '/pages/chat/history', needLogin: true },
   { key: 'posts', title: '我的动态', path: '/pages/mine/posts', needLogin: true },
+  { key: 'likes', title: '我的点赞', path: '/pages/mine/likes', needLogin: true },
+  { key: 'follows', title: '我的关注', path: '/pages/mine/follows', needLogin: true },
   { key: 'orders', title: '我的订单', path: '/pages/mine/orders', needLogin: true },
   { key: 'address', title: '收货地址', path: '/pages/mine/address', needLogin: true },
-  { key: 'points', title: '积分商城', path: '/pages/shop/index', needLogin: true },
 ]);
 
 const otherMenuList = reactive([
@@ -241,12 +270,17 @@ const onRefresh = async () => {
  * 获取今日签到状态
  */
 const fetchSignInStatus = async () => {
-  if (!isLogin.value) return;
+  if (!isLogin.value) {
+    hasSigned.value = false;
+    return;
+  }
   try {
     const res = await getSignInStatus();
-    hasSigned.value = !!res.signed;
+    const data = res.data || res;
+    hasSigned.value = !!data.signed;
   } catch (e) {
     console.error('[mine页] 获取签到状态失败:', e?.code, e?.msg);
+    hasSigned.value = false;
   }
 };
 
@@ -262,13 +296,18 @@ const handleSignIn = async () => {
   signInLoading.value = true;
   try {
     const res = await signIn();
+    const data = res.data || res;
     hasSigned.value = true;
     // 更新本地积分余额
-    if (res.pointsBalance != null) {
-      userStore.setUserInfo({ ...userStore.userInfo, points: res.pointsBalance });
+    if (data.pointsBalance != null) {
+      userStore.setUserInfo({ ...userStore.userInfo, points: data.pointsBalance });
     }
-    showToast(res.message || `签到成功，获得 ${res.pointsReward || 5} 积分`, 'success');
+    showToast(data.message || `签到成功，获得 ${data.pointsReward || 5} 积分`, 'success');
   } catch (e) {
+    // 后端返回"今日已签到"时，同步状态
+    if (e?.msg && e.msg.includes('已签到')) {
+      hasSigned.value = true;
+    }
     showToast(e?.msg || '签到失败，请重试');
   } finally {
     signInLoading.value = false;
@@ -404,6 +443,40 @@ const handleLogout = () => {
 .mine-page {
   min-height: 100vh;
   background-color: #F6F7FB;
+}
+
+/* ========== 自定义导航栏 ========== */
+.custom-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background-color: #F6F7FB;
+
+  .nav-content {
+    display: flex;
+    align-items: center;
+    height: 88rpx;
+    padding: 0 24rpx;
+  }
+
+  .nav-left,
+  .nav-right {
+    width: 120rpx;
+    flex-shrink: 0;
+  }
+
+  .nav-center {
+    flex: 1;
+    text-align: center;
+  }
+
+  .nav-title {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #1A1A1A;
+  }
 }
 
 .page-scroll {
@@ -564,6 +637,20 @@ const handleLogout = () => {
     width: 1rpx;
     height: 44rpx;
     background-color: #FFE8D6;
+  }
+}
+
+.sub-stats-row {
+  margin-top: 12rpx;
+  padding-left: 8rpx;
+
+  .sub-stat {
+    font-size: 24rpx;
+    color: #A8A8B0;
+
+    &:active {
+      color: #FF7E3D;
+    }
   }
 }
 

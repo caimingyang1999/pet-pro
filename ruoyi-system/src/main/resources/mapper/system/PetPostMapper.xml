@@ -10,6 +10,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="petId"         column="pet_id"         />
         <result property="content"       column="content"        />
         <result property="images"        column="images"         />
+        <result property="videoUrl"      column="video_url"      />
+        <result property="videoCover"    column="video_cover"    />
         <result property="status"        column="status"         />
         <result property="likeCount"     column="like_count"     />
         <result property="commentCount"  column="comment_count"  />
@@ -20,23 +22,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="userName"      column="user_name"      />
         <result property="userAvatar"    column="user_avatar"    />
         <result property="petName"       column="pet_name"       />
+        <result property="isLike"        column="is_like"        />
+        <result property="isFollowed"    column="is_followed"    />
     </resultMap>
 
     <sql id="selectPostVo">
-        select p.id, p.user_id, p.pet_id, p.content, p.images, p.status,
+        select p.id, p.user_id, p.pet_id, p.content, p.images, p.video_url, p.video_cover, p.status,
                p.like_count, p.comment_count, p.view_count, p.del_flag,
                p.create_time, p.update_time,
                u.nick_name as user_name, u.avatar as user_avatar,
-               pi.name as pet_name
+               pi.name as pet_name,
+               case when pl.id is not null then true else false end as is_like,
+               case when uf.id is not null then true else false end as is_followed
         from pet_post p
         left join sys_user u on p.user_id = u.user_id
         left join pet_info pi on p.pet_id = pi.id
+        <if test="currentUserId != null">
+            left join post_like pl on pl.post_id = p.id and pl.user_id = #{currentUserId}
+            left join user_follow uf on uf.follower_id = #{currentUserId}
+                                     and uf.followee_id = p.user_id
+                                     and uf.del_flag = '0'
+        </if>
     </sql>
 
+    <!-- 通用动态列表（支持 tab 切换、关注过滤、点赞状态回显） -->
     <select id="selectPostList" resultMap="PetPostResult">
         <include refid="selectPostVo"/>
         <where>
             p.del_flag = '0'
+            <!-- 仅展示审核通过的动态（推荐/最新/关注 tab）；userId 指定时查个人动态，也限定审核通过 -->
+            and p.status = '1'
             <if test="keyword != null and keyword != ''">
                 and (p.content like concat('%', #{keyword}, '%')
                      or u.nick_name like concat('%', #{keyword}, '%'))
@@ -44,11 +59,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null">
                 and p.user_id = #{userId}
             </if>
+            <!-- 关注 tab：只显示当前用户关注的人的动态 -->
+            <if test="tab == 'follow'">
+                <choose>
+                    <when test="followeeIds != null and followeeIds.size() > 0">
+                        and p.user_id in
+                        <foreach collection="followeeIds" item="id" open="(" separator="," close=")">
+                            #{id}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        and 1 = 0
+                    </otherwise>
+                </choose>
+            </if>
         </where>
-        order by p.create_time desc
+        <!-- 排序策略 -->
+        <choose>
+            <when test="tab == 'recommend'">
+                <!-- 推荐：按热度综合排序 (点赞*3 + 评论*5 + 浏览*0.1 + 时间衰减) -->
+                order by (p.like_count * 3 + p.comment_count * 5 + p.view_count * 0.1) desc,
+                         p.create_time desc
+            </when>
+            <when test="tab == 'follow'">
+                <!-- 关注：按时间倒序 -->
+                order by p.create_time desc
+            </when>
+            <otherwise>
+                <!-- 最新/默认：按时间倒序 -->
+                order by p.create_time desc
+            </otherwise>
+        </choose>
     </select>
 
-    <!-- 管理端-动态列表（支持状态、时间范围筛选） -->
+    <!-- 管理端-动态列表 -->
     <select id="selectPostListAdmin" resultMap="PetPostResult">
         <include refid="selectPostVo"/>
         <where>
@@ -66,10 +110,38 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by p.create_time desc
     </select>
 
-    <!-- 管理端-动态详情（关联用户和宠物信息） -->
+    <!-- 动态详情 -->
     <select id="selectPostById" resultMap="PetPostResult">
         <include refid="selectPostVo"/>
         where p.id = #{postId}
+    </select>
+
+    <!-- 我的点赞列表 -->
+    <select id="selectPostListByLike" resultMap="PetPostResult">
+        select p.id, p.user_id, p.pet_id, p.content, p.images, p.video_url, p.video_cover, p.status,
+               p.like_count, p.comment_count, p.view_count, p.del_flag,
+               p.create_time, p.update_time,
+               u.nick_name as user_name, u.avatar as user_avatar,
+               pi.name as pet_name,
+               true as is_like,
+               case when uf.id is not null then true else false end as is_followed
+        from post_like pl
+        inner join pet_post p on pl.post_id = p.id
+        left join sys_user u on p.user_id = u.user_id
+        left join pet_info pi on p.pet_id = pi.id
+        left join user_follow uf on uf.follower_id = pl.user_id
+                                 and uf.followee_id = p.user_id
+                                 and uf.del_flag = '0'
+        <where>
+            p.del_flag = '0'
+            and p.status = '1'
+            and pl.user_id = #{userId}
+            <if test="keyword != null and keyword != ''">
+                and (p.content like concat('%', #{keyword}, '%')
+                     or u.nick_name like concat('%', #{keyword}, '%'))
+            </if>
+        </where>
+        order by pl.create_time desc
     </select>
 
 </mapper>

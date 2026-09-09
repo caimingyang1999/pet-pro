@@ -1,7 +1,7 @@
 <template>
   <view class="chat-page">
     <!-- 自定义导航栏 -->
-    <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
+    <view class="custom-nav" :style="{ paddingTop: navBarHeight + 'px' }">
       <view class="nav-content">
         <view class="nav-left">
           <text class="nav-title">养宠顾问</text>
@@ -154,12 +154,13 @@ const userAvatar = computed(() => {
   return fullImageUrl(url);
 });
 
-const statusBarHeight = ref(20);
+const navBarHeight = ref(44);
 const safeBottom = ref(0);
 // #ifdef MP-WEIXIN
 try {
+  const menuRect = uni.getMenuButtonBoundingClientRect();
+  navBarHeight.value = menuRect.bottom + 8;
   const sysInfo = uni.getSystemInfoSync();
-  statusBarHeight.value = sysInfo.statusBarHeight || 20;
   safeBottom.value = sysInfo.safeAreaInsets?.bottom || 0;
 } catch (e) {}
 // #endif
@@ -506,11 +507,16 @@ onUnmounted(() => {
     align-items: center;
     justify-content: space-between;
     padding: 16rpx 0 8rpx;
+    position: relative;
   }
 
   .nav-left {
+    position: absolute;
+    left: 0;
+    right: 0;
     display: flex;
     flex-direction: column;
+    align-items: center;
   }
 
   .nav-title {
@@ -555,6 +561,9 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     gap: 16rpx;
+    margin-left: auto;
+    position: relative;
+    z-index: 1;
   }
 
   .nav-action {

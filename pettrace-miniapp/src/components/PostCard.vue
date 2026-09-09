@@ -1,16 +1,30 @@
 <template>
   <view class="post-card">
-    <!-- 头部：头像 + 用户信息 -->
+    <!-- 头部：头像 + 用户信息 + 关注按钮 -->
     <view class="post-header">
-      <image
-        class="avatar"
-        :src="avatarUrl"
-        mode="aspectFill"
-      />
-      <view class="user-info">
-        <text class="nickname">{{ post.userName || '匿名用户' }}</text>
-        <text class="time">{{ formatTime(post.createTime) }}</text>
+      <view class="header-left" @click="goUserHome">
+        <image
+          class="avatar"
+          :src="avatarUrl"
+          mode="aspectFill"
+        />
+        <view class="user-info">
+          <text class="nickname">{{ post.userName || '匿名用户' }}</text>
+          <text class="time">{{ formatTime(post.createTime) }}</text>
+        </view>
       </view>
+
+      <!-- 关注按钮（仅自己不显示） -->
+      <view
+        v-if="!isOwner"
+        class="follow-btn"
+        :class="{ active: post.isFollowed }"
+        @click.stop="handleToggleFollow"
+      >
+        <text>{{ post.isFollowed ? '已关注' : '+ 关注' }}</text>
+      </view>
+
+      <!-- 更多操作（自己 -> 删除，别人 -> 评论） -->
       <view class="header-more" @click.stop="handleMore">
         <Icon name="more" :size="18" color="#999" />
       </view>
@@ -18,10 +32,22 @@
 
     <!-- 正文 -->
     <view class="post-body">
-      <text class="content-text">{{ post.content }}</text>
+      <text class="content-text" v-if="post.content">{{ post.content }}</text>
 
-      <!-- 图片九宫格 -->
-      <view v-if="images.length" class="image-grid" :class="'grid-' + gridClass">
+      <!-- 视频区域 -->
+      <view v-if="videoUrl" class="video-wrap">
+        <video
+          :src="videoUrl"
+          :poster="videoCover || ''"
+          class="video-player"
+          controls
+          show-center-play-btn
+          object-fit="cover"
+        />
+      </view>
+
+      <!-- 图片九宫格（无视频时才显示） -->
+      <view v-else-if="images.length" class="image-grid" :class="'grid-' + gridClass">
         <image
           v-for="(img, idx) in images"
           :key="idx"
@@ -64,15 +90,22 @@ import { computed } from 'vue';
 import { formatTime, fullImageUrl } from '@/utils/index.js';
 import { useUserStore } from '@/store/user.js';
 import Icon from '@/components/Icon.vue';
+import { toggleFollow as toggleFollowApi } from '@/api/follow.js';
+import { showToast } from '@/utils/index.js';
 
 const props = defineProps({
   post: {
     type: Object,
     default: () => ({}),
   },
+  /** 是否隐藏关注按钮（搜索页等场景下避免误触） */
+  hideFollow: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(['like', 'comment', 'preview', 'delete']);
+const emit = defineEmits(['like', 'comment', 'preview', 'delete', 'follow', 'goUser']);
 
 const userStore = useUserStore();
 
@@ -85,6 +118,14 @@ const images = computed(() => {
   }
   if (!Array.isArray(arr)) return [];
   return arr.map(fullImageUrl);
+});
+
+const videoUrl = computed(() => {
+  return props.post.videoUrl ? fullImageUrl(props.post.videoUrl) : '';
+});
+
+const videoCover = computed(() => {
+  return props.post.videoCover ? fullImageUrl(props.post.videoCover) : '';
 });
 
 const avatarUrl = computed(() => {
@@ -112,6 +153,28 @@ const previewImage = (idx) => {
 
 const handleShare = () => {
   uni.showToast({ title: '分享功能开发中', icon: 'none' });
+};
+
+const goUserHome = () => {
+  if (props.post.userId && !isOwner.value) {
+    uni.navigateTo({ url: `/pages/user/home?userId=${props.post.userId}` });
+  }
+  emit('goUser', props.post.userId);
+};
+
+const handleToggleFollow = async () => {
+  const token = uni.getStorageSync('token');
+  if (!token) {
+    showToast('请先登录');
+    return;
+  }
+  try {
+    const res = await toggleFollowApi(props.post.userId);
+    const nowFollowed = res.followed !== undefined ? res.followed : !props.post.isFollowed;
+    emit('follow', { userId: props.post.userId, followed: nowFollowed });
+  } catch (err) {
+    showToast(err?.msg || '操作失败');
+  }
 };
 
 const handleMore = () => {
@@ -143,6 +206,13 @@ const handleMore = () => {
   align-items: center;
   margin-bottom: 20rpx;
 
+  .header-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+
   .avatar {
     width: 80rpx;
     height: 80rpx;
@@ -172,6 +242,27 @@ const handleMore = () => {
     }
   }
 
+  .follow-btn {
+    padding: 6rpx 20rpx;
+    border-radius: 24rpx;
+    font-size: 24rpx;
+    color: #FF7E3D;
+    border: 2rpx solid #FF7E3D;
+    background-color: #fff;
+    flex-shrink: 0;
+    margin-right: 16rpx;
+
+    &.active {
+      color: #999;
+      border-color: #E0E0E0;
+      background-color: #F5F5F5;
+    }
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+
   .header-more {
     width: 56rpx;
     height: 56rpx;
@@ -179,6 +270,7 @@ const handleMore = () => {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    flex-shrink: 0;
 
     &:active {
       background-color: #F5F5F5;
@@ -195,6 +287,17 @@ const handleMore = () => {
     word-break: break-all;
     display: block;
     margin-bottom: 16rpx;
+  }
+
+  .video-wrap {
+    margin-bottom: 16rpx;
+  }
+
+  .video-player {
+    width: 100%;
+    height: 500rpx;
+    border-radius: 12rpx;
+    background-color: #000;
   }
 
   .image-grid {

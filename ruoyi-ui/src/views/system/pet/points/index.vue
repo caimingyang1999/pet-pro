@@ -1,12 +1,39 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="用户名/手机号" prop="keyword">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="110px">
+      <el-form-item label="关键字" prop="keyword">
         <el-input
           v-model="queryParams.keyword"
-          placeholder="请输入用户名或手机号"
+          placeholder="用户名/昵称/手机号"
           clearable
-          style="width: 240px"
+          style="width: 200px"
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="用户账号" prop="userName">
+        <el-input
+          v-model="queryParams.userName"
+          placeholder="请输入用户账号"
+          clearable
+          style="width: 160px"
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="用户昵称" prop="nickName">
+        <el-input
+          v-model="queryParams.nickName"
+          placeholder="请输入用户昵称"
+          clearable
+          style="width: 160px"
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="手机号" prop="phonenumber">
+        <el-input
+          v-model="queryParams.phonenumber"
+          placeholder="请输入手机号"
+          clearable
+          style="width: 160px"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
@@ -130,26 +157,30 @@
       </div>
     </el-dialog>
 
-    <el-dialog title="积分明细" :visible.sync="detailDialog.open" width="900px" append-to-body>
-      <el-table v-loading="detailDialog.loading" :data="recordList" border>
+    <el-dialog title="积分明细" :visible.sync="detailDialog.open" width="70%" top="5vh" append-to-body>
+      <el-table v-loading="detailDialog.loading" :data="recordList" border style="width: 100%;">
         <el-table-column label="序号" type="index" width="60" align="center" />
-        <el-table-column label="变动类型" align="center" prop="changeType" width="130">
+        <el-table-column label="变动类型" align="center" prop="changeType" min-width="110">
           <template slot-scope="scope">
             <el-tag :type="getTypeTagType(scope.row.changeType)" size="small">
               {{ getTypeLabel(scope.row.changeType) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="变动数量" align="center" prop="pointsChange" width="120">
+        <el-table-column label="变动数量" align="center" prop="pointsChange" width="100">
           <template slot-scope="scope">
             <span :class="scope.row.pointsChange > 0 ? 'points-add' : 'points-subtract'">
               {{ scope.row.pointsChange > 0 ? '+' : '' }}{{ scope.row.pointsChange }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="变动后余额" align="center" prop="pointsBalance" width="120" />
-        <el-table-column label="关联业务ID" align="center" prop="relateId" width="120" :show-overflow-tooltip="true" />
-        <el-table-column label="备注" align="center" prop="remark" min-width="150" :show-overflow-tooltip="true" />
+        <el-table-column label="变动后余额" align="center" prop="pointsBalance" width="110" />
+        <el-table-column label="关联业务ID" align="center" prop="relateId" width="120" />
+        <el-table-column label="备注" align="center" prop="remark" min-width="160" :show-overflow-tooltip="true">
+          <template slot-scope="scope">
+            <span>{{ scope.row.remark || '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="时间" align="center" prop="createTime" width="160">
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.createTime) }}</span>
@@ -185,7 +216,10 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        keyword: undefined
+        keyword: undefined,
+        userName: undefined,
+        nickName: undefined,
+        phonenumber: undefined
       },
       pointsDialog: {
         open: false,

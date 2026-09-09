@@ -75,7 +75,7 @@ public class AdminPostController extends BaseController
             @ApiParam(name = "postId", value = "动态ID", required = true)
             @PathVariable Long postId)
     {
-        return AjaxResult.success(postService.getPostDetail(postId));
+        return AjaxResult.success(postService.getPostDetail(postId, null));
     }
 
     /**

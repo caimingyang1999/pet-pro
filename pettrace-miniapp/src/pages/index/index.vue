@@ -1,7 +1,14 @@
 <template>
   <view class="home-page">
-    <!-- 顶部区域：搜索框 + 轮播图 -->
-    <view class="top-section" :style="{ paddingTop: statusBarHeight + 'px' }">
+    <!-- 顶部区域：居中标题 + 搜索框 + 轮播图 -->
+    <view class="top-section" :style="{ paddingTop: navBarHeight + 'px' }">
+      <!-- 标题导航栏 -->
+      <view class="page-header">
+        <view class="header-title">
+          <text class="title-text">首页</text>
+        </view>
+      </view>
+
       <!-- 搜索框 -->
       <view class="search-bar">
         <view class="search-box" @click="focusSearch">
@@ -61,6 +68,7 @@
         @comment="handleComment"
         @preview="handlePreview"
         @delete="handleDelete"
+        @follow="handleFollow"
       />
     </view>
 
@@ -97,12 +105,12 @@ import { useUserStore } from '@/store/user.js';
 const userStore = useUserStore();
 const userInfo = computed(() => userStore.userInfo);
 
-const statusBarHeight = ref(20);
+const navBarHeight = ref(44);
 
 // #ifdef MP-WEIXIN
 try {
-  const sysInfo = uni.getSystemInfoSync();
-  statusBarHeight.value = sysInfo.statusBarHeight || 20;
+  const menuRect = uni.getMenuButtonBoundingClientRect();
+  navBarHeight.value = menuRect.bottom + 8;
 } catch (e) {}
 // #endif
 
@@ -165,7 +173,7 @@ const onBannerClick = (banner) => {
 };
 
 const focusSearch = () => {
-  showToast('搜索功能开发中');
+  uni.navigateTo({ url: '/pages/search/index' });
 };
 
 const switchTab = (key) => {
@@ -181,7 +189,8 @@ const fetchPostList = async (isRefresh = false) => {
   loading.value = true;
   loadStatus.value = 'loading';
   try {
-    const res = await getPostList(pageParams.value);
+    // 传递 tab 参数给后端：recommend 推荐 / follow 关注 / latest 最新
+    const res = await getPostList({ ...pageParams.value, tab: currentTab.value });
     const list = res.rows || [];
     if (isRefresh) {
       postList.value = list;
@@ -217,6 +226,12 @@ const handleLike = async (id) => {
   } catch (err) {
     showToast(err?.msg || '操作失败');
   }
+};
+
+const handleFollow = ({ userId, followed }) => {
+  postList.value.forEach((p) => {
+    if (p.userId === userId) p.isFollowed = followed;
+  });
 };
 
 const handleComment = (id) => {
@@ -293,8 +308,25 @@ onReachBottom(() => {
   padding: 0 24rpx 24rpx;
 }
 
+.page-header {
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+
+  .header-title {
+    width: 100%;
+    text-align: center;
+  }
+
+  .title-text {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #1A1A1A;
+  }
+}
+
 .search-bar {
-  padding: 16rpx 0;
+  padding: 8rpx 0 16rpx;
 
   .search-box {
     display: flex;

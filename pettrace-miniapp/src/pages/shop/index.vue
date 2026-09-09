@@ -3,11 +3,10 @@
     <!-- 顶部紫色背景区 -->
     <view class="top-bg">
       <!-- 自定义导航栏 -->
-      <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <view class="custom-nav" :style="{ paddingTop: navBarHeight + 'px' }">
         <view class="nav-content">
           <view class="nav-title-wrap">
-            <text class="nav-title">积分商城</text>
-            <text class="nav-subtitle">好物兑换 · 积分当钱花</text>
+            <text class="nav-title">商城</text>
           </view>
           <view class="nav-right">
             <view class="nav-btn" @click="handleSearch">
@@ -151,11 +150,11 @@ const userStore = useUserStore();
 const userPoints = computed(() => userStore.userInfo?.points || 0);
 const needPoints = computed(() => Math.max(0, 500 - userPoints.value));
 
-const statusBarHeight = ref(20);
+const navBarHeight = ref(44);
 // #ifdef MP-WEIXIN
 try {
-  const sysInfo = uni.getSystemInfoSync();
-  statusBarHeight.value = sysInfo.statusBarHeight || 20;
+  const menuRect = uni.getMenuButtonBoundingClientRect();
+  navBarHeight.value = menuRect.bottom + 4;
 } catch (e) {}
 // #endif
 
@@ -267,7 +266,7 @@ onMounted(() => {
 /* ===== 顶部背景区 ===== */
 .top-bg {
   background: linear-gradient(135deg, #FF934F 0%, #FF7E3D 60%, #F4672A 100%);
-  padding-bottom: 40rpx;
+  padding-bottom: 24rpx;
   overflow: hidden;
 }
 
@@ -276,13 +275,17 @@ onMounted(() => {
   .nav-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 16rpx 28rpx 24rpx;
+    padding: 8rpx 28rpx 16rpx;
+    position: relative;
   }
 
   .nav-title-wrap {
-    display: flex;
-    flex-direction: column;
+    flex: 1;
+    text-align: center;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 8rpx;
   }
 
   .nav-title {
@@ -292,15 +295,12 @@ onMounted(() => {
     line-height: 1.3;
   }
 
-  .nav-subtitle {
-    font-size: 22rpx;
-    color: rgba(255, 255, 255, 0.8);
-    margin-top: 4rpx;
-  }
-
   .nav-right {
+    margin-left: auto;
     display: flex;
     align-items: center;
+    position: relative;
+    z-index: 1;
   }
 
   .nav-btn {

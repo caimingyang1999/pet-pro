@@ -151,6 +151,35 @@
       "style": {
         "navigationBarTitleText": "详情"
       }
+    },
+    {
+      "path": "pages/search/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "搜索",
+        "navigationBarBackgroundColor": "#FFFFFF"
+      }
+    },
+    {
+      "path": "pages/mine/follows",
+      "style": {
+        "navigationBarTitleText": "我的关注"
+      }
+    },
+    {
+      "path": "pages/mine/likes",
+      "style": {
+        "navigationBarTitleText": "我的点赞",
+        "enablePullDownRefresh": true,
+        "backgroundColor": "#F5F6FA"
+      }
+    },
+    {
+      "path": "pages/user/home",
+      "style": {
+        "navigationBarTitleText": "用户主页",
+        "navigationBarBackgroundColor": "#FFFFFF"
+      }
     }
   ],
   "globalStyle": {

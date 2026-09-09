@@ -71,6 +71,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="userName != null and userName != ''">
 			AND u.user_name like concat('%', #{userName}, '%')
 		</if>
+		<if test="nickName != null and nickName != ''">
+			AND u.nick_name like concat('%', #{nickName}, '%')
+		</if>
 		<if test="status != null and status != ''">
 			AND u.status = #{status}
 		</if>
@@ -274,5 +277,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			#{status}, #{delFlag}, #{points}, #{loginType}, sysdate()
 		)
 	</insert>
+
+	<!-- 按昵称模糊搜索用户 -->
+	<select id="selectUsersByNickNameLike" parameterType="String" resultMap="SysUserResult">
+		select user_id, nick_name, avatar
+		from sys_user
+		where del_flag = '0'
+		  and nick_name like concat('%', #{keyword}, '%')
+		order by user_id asc
+		limit #{limit}
+	</select>
 
 </mapper>

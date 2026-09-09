@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.github.pagehelper.PageHelper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.system.domain.PetPost;
@@ -37,33 +39,48 @@ public class PostController extends BaseController
     private IPostService postService;
 
     /**
-     * 动态列表（支持分页、关键词搜索，无需登录也可查看）
+     * 动态列表（支持 tab 切换：recommend-推荐 follow-关注 latest-最新；支持关键词搜索）
      *
-     * @param pageNum  当前页码（默认1）
-     * @param pageSize 每页条数（默认10）
+     * @param pageNum  当前页码
+     * @param pageSize 每页条数
      * @param keyword  搜索关键词
-     * @return 动态分页列表
+     * @param tab      列表 Tab
+     * @param userId   指定用户动态（可选）
      */
     @ApiOperation("动态列表")
     @GetMapping("/list")
     public TableDataInfo list(
             @ApiParam(name = "pageNum", value = "当前页码") @RequestParam(defaultValue = "1") Integer pageNum,
             @ApiParam(name = "pageSize", value = "每页条数") @RequestParam(defaultValue = "10") Integer pageSize,
-            @ApiParam(name = "keyword", value = "搜索关键词") @RequestParam(required = false) String keyword)
+            @ApiParam(name = "keyword", value = "搜索关键词") @RequestParam(required = false) String keyword,
+            @ApiParam(name = "tab", value = "列表Tab：recommend/follow/latest") @RequestParam(required = false) String tab,
+            @ApiParam(name = "userId", value = "指定用户动态ID") @RequestParam(required = false) Long userId)
     {
-        startPage();
         PostQueryDTO dto = new PostQueryDTO();
         dto.setPageNum(pageNum);
         dto.setPageSize(pageSize);
         dto.setKeyword(keyword);
+        dto.setTab(tab);
+        dto.setUserId(userId);
+        // 关注 tab 需要 currentUserId；推荐/最新也用来回显点赞状态
+        if ("follow".equals(tab))
+        {
+            if (SecurityUtils.getUserId() == null)
+            {
+                throw new ServiceException("登录后可查看关注动态");
+            }
+            dto.setCurrentUserId(getUserId());
+        }
+        else if (SecurityUtils.getUserId() != null)
+        {
+            dto.setCurrentUserId(getUserId());
+        }
         List<PetPost> list = postService.getPostList(dto);
         return getDataTable(list);
     }
 
     /**
-     * 我的动态（需要登录）
-     *
-     * @return 当前用户发布的动态列表
+     * 我的动态（需登录）
      */
     @ApiOperation("我的动态")
     @PreAuthorize("@ss.isAuthenticated()")
@@ -73,15 +90,29 @@ public class PostController extends BaseController
         startPage();
         PostQueryDTO dto = new PostQueryDTO();
         dto.setUserId(getUserId());
+        dto.setCurrentUserId(getUserId());
         List<PetPost> list = postService.getPostList(dto);
         return getDataTable(list);
     }
 
     /**
-     * 动态详情
-     *
-     * @param postId 动态ID
-     * @return 动态详情
+     * 我的点赞列表
+     */
+    @ApiOperation("我的点赞列表")
+    @PreAuthorize("@ss.isAuthenticated()")
+    @GetMapping("/my-likes")
+    public TableDataInfo myLikes(
+            @ApiParam(name = "pageNum", value = "当前页码") @RequestParam(defaultValue = "1") Integer pageNum,
+            @ApiParam(name = "pageSize", value = "每页条数") @RequestParam(defaultValue = "10") Integer pageSize,
+            @ApiParam(name = "keyword", value = "搜索关键词") @RequestParam(required = false) String keyword)
+    {
+        PageHelper.startPage(pageNum, pageSize);
+        List<PetPost> list = postService.getPostListByLike(getUserId(), keyword);
+        return getDataTable(list);
+    }
+
+    /**
+     * 动态详情（含点赞/关注状态回显）
      */
     @ApiOperation("动态详情")
     @GetMapping("/{postId}")
@@ -89,14 +120,12 @@ public class PostController extends BaseController
             @ApiParam(name = "postId", value = "动态ID", required = true)
             @PathVariable Long postId)
     {
-        return AjaxResult.success(postService.getPostDetail(postId));
+        Long currentUserId = SecurityUtils.getUserId() != null ? getUserId() : null;
+        return AjaxResult.success(postService.getPostDetail(postId, currentUserId));
     }
 
     /**
-     * 发布动态
-     *
-     * @param post 动态信息（content-内容，images-图片JSON，petId-关联宠物）
-     * @return 操作结果
+     * 发布动态（支持图片 + 视频）
      */
     @ApiOperation("发布动态")
     @PreAuthorize("@ss.isAuthenticated()")
@@ -108,10 +137,7 @@ public class PostController extends BaseController
     }
 
     /**
-     * 删除动态（校验是否为发布者）
-     *
-     * @param postId 动态ID
-     * @return 操作结果
+     * 删除动态
      */
     @ApiOperation("删除动态")
     @PreAuthorize("@ss.isAuthenticated()")
@@ -130,9 +156,6 @@ public class PostController extends BaseController
 
     /**
      * 点赞/取消点赞
-     *
-     * @param postId 动态ID
-     * @return 操作结果（true-已点赞 false-已取消）
      */
     @ApiOperation("点赞/取消点赞")
     @PreAuthorize("@ss.isAuthenticated()")
@@ -148,20 +171,14 @@ public class PostController extends BaseController
     }
 
     /**
-     * 评论列表（树形结构）
-     *
-     * @param postId   动态ID
-     * @param pageNum  当前页码
-     * @param pageSize 每页条数
-     * @return 评论分页列表
+     * 评论列表
      */
     @ApiOperation("评论列表")
     @GetMapping("/{postId}/comments")
     public TableDataInfo comments(
-            @ApiParam(name = "postId", value = "动态ID", required = true)
             @PathVariable Long postId,
-            @ApiParam(name = "pageNum", value = "当前页码") @RequestParam(defaultValue = "1") Integer pageNum,
-            @ApiParam(name = "pageSize", value = "每页条数") @RequestParam(defaultValue = "10") Integer pageSize)
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize)
     {
         startPage();
         List<PostComment> list = postService.getCommentList(postId, pageNum, pageSize);
@@ -170,19 +187,24 @@ public class PostController extends BaseController
 
     /**
      * 发表评论
-     *
-     * @param postId  动态ID
-     * @param comment 评论信息（content-内容，parentId-父评论ID）
-     * @return 操作结果
      */
     @ApiOperation("发表评论")
     @PreAuthorize("@ss.isAuthenticated()")
     @PostMapping("/{postId}/comments")
-    public AjaxResult addComment(
-            @ApiParam(name = "postId", value = "动态ID", required = true)
-            @PathVariable Long postId,
-            @RequestBody PostComment comment)
+    public AjaxResult addComment(@PathVariable Long postId, @RequestBody PostComment comment)
     {
         return toAjax(postService.addComment(postId, getUserId(), comment.getParentId(), comment.getContent()));
+    }
+
+    /**
+     * 搜索用户（模糊匹配昵称）
+     */
+    @ApiOperation("搜索用户")
+    @GetMapping("/search/users")
+    public AjaxResult searchUsers(
+            @ApiParam(name = "keyword", value = "搜索关键词") @RequestParam String keyword,
+            @ApiParam(name = "limit", value = "返回条数") @RequestParam(defaultValue = "10") Integer limit)
+    {
+        return AjaxResult.success(postService.searchUsers(keyword, limit));
     }
 }

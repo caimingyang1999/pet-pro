@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.UserFollowMapper">
+
+    <resultMap type="com.ruoyi.system.domain.UserFollow" id="UserFollowResult">
+        <id       property="id"                 column="id"                  />
+        <result   property="followerId"         column="follower_id"         />
+        <result   property="followeeId"         column="followee_id"         />
+        <result   property="delFlag"            column="del_flag"            />
+        <result   property="createTime"         column="create_time"         />
+        <result   property="updateTime"         column="update_time"         />
+        <result   property="followeeNickName"   column="followee_nick_name"  />
+        <result   property="followeeAvatar"     column="followee_avatar"     />
+        <result   property="followerNickName"   column="follower_nick_name"  />
+        <result   property="followerAvatar"     column="follower_avatar"     />
+    </resultMap>
+
+    <sql id="selectFollowVo">
+        select uf.id, uf.follower_id, uf.followee_id, uf.del_flag,
+               uf.create_time, uf.update_time,
+               ue.nick_name as followee_nick_name, ue.avatar as followee_avatar,
+               ur.nick_name as follower_nick_name, ur.avatar as follower_avatar
+        from user_follow uf
+        left join sys_user ue on uf.followee_id = ue.user_id
+        left join sys_user ur on uf.follower_id = ur.user_id
+    </sql>
+
+    <!-- 查询某用户的关注列表 -->
+    <select id="selectFollowList" resultMap="UserFollowResult">
+        <include refid="selectFollowVo"/>
+        <where>
+            uf.del_flag = '0'
+            and uf.follower_id = #{followerId}
+        </where>
+        order by uf.create_time desc
+    </select>
+
+    <!-- 查询某用户的粉丝列表 -->
+    <select id="selectFollowerList" resultMap="UserFollowResult">
+        <include refid="selectFollowVo"/>
+        <where>
+            uf.del_flag = '0'
+            and uf.followee_id = #{followeeId}
+        </where>
+        order by uf.create_time desc
+    </select>
+
+    <!-- 批量查询被关注用户ID列表 -->
+    <select id="selectFolloweeIds" resultType="java.lang.Long">
+        select followee_id
+        from user_follow
+        where del_flag = '0'
+          and follower_id = #{followerId}
+    </select>
+
+</mapper>
