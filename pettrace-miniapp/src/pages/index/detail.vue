@@ -94,7 +94,7 @@
                 <view class="comment-meta">
                   <text class="comment-name">{{ child.userName || '匿名' }}</text>
                   <text v-if="child.parentId" class="reply-to">
-                    回复 <text class="reply-target">{{ item.userName }}</text>
+                    回复 <text class="reply-target">{{ child.replyUserName || item.userName || '用户' }}</text>
                   </text>
                   <text class="comment-time">{{ formatTime(child.createTime) }}</text>
                 </view>
@@ -211,7 +211,12 @@ onLoad((options) => {
 const fetchPostDetail = async () => {
   try {
     const res = await getPostDetail(postId.value);
-    postDetail.value = res.data || res;
+    const data = res.data || res;
+    postDetail.value = data;
+    // 评论总数以后端动态详情里的 comment_count 为准（含回复）
+    if (data?.commentCount != null) {
+      commentTotal.value = data.commentCount;
+    }
   } catch (err) {
     console.error('[详情页] 获取动态详情失败:', err?.code || err?.msg || err);
     showToast('获取详情失败');
@@ -226,7 +231,10 @@ const fetchComments = async (isRefresh = false) => {
   try {
     const res = await getComments(postId.value, commentPageParams.value);
     const list = res.rows || [];
-    commentTotal.value = res.total || 0;
+    // 详情接口未返回时先用评论分页的总数兜底，避免标题长时间显示 0
+    if (commentTotal.value === 0) {
+      commentTotal.value = res.total || 0;
+    }
     if (isRefresh) {
       comments.value = list;
     } else {

@@ -172,7 +172,7 @@ const handlePreview = ({ images, current }) => {
 <style lang="scss" scoped>
 .user-home-page {
   min-height: 100vh;
-  background-color: #F5F6FA;
+  background-color: #F8F9FC;
 }
 
 .user-card {
@@ -223,7 +223,7 @@ const handlePreview = ({ images, current }) => {
     .stat-value {
       font-size: 34rpx;
       font-weight: 700;
-      color: #FF7E3D;
+      color: #FF8C42;
     }
 
     .stat-label {

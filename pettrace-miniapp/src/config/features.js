@@ -4,7 +4,7 @@ import request from '@/api/request.js';
 /**
  * 功能开关（Feature Toggle）
  *
- * adviserEnabled：养宠顾问模块开关
+ * adviserEnabled：养宠助手模块开关
  *  - 本地默认值：可在 .env 中设置 VITE_ADVISER_ENABLED=false 硬关闭（提审包建议关闭）
  *  - 远程下发：App 启动时请求 GET /config/features，以后端返回为准
  *  - 降级策略：远程接口不可用时，回退到上次成功拉取的本地缓存，再不行用本地默认值
@@ -20,7 +20,7 @@ const LOCAL_DEFAULT = {
 
 export const features = reactive({ ...LOCAL_DEFAULT });
 
-/** 养宠顾问模块是否启用 */
+/** 养宠助手模块是否启用 */
 export const isAdviserEnabled = () => features.adviserEnabled !== false;
 
 let fetchPromise = null;

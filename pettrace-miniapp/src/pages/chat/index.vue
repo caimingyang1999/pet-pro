@@ -4,7 +4,7 @@
     <view class="custom-nav" :style="{ paddingTop: navBarHeight + 'px' }">
       <view class="nav-content">
         <view class="nav-left">
-          <text class="nav-title">养宠顾问</text>
+          <text class="nav-title">养宠助手</text>
           <view class="nav-status">
             <view class="status-dot" :class="{ thinking: loading, offline: !adviserEnabled }" />
             <text class="status-text">{{ statusText }}</text>
@@ -26,7 +26,7 @@
       <view class="maintain-icon-wrap">
         <Icon name="message" :size="48" color="#FFB07A" />
       </view>
-      <text class="maintain-title">养宠顾问升级中</text>
+      <text class="maintain-title">养宠助手升级中</text>
       <text class="maintain-desc">功能正在打磨升级，敬请期待～</text>
     </view>
 
@@ -39,30 +39,57 @@
       :scroll-with-animation="true"
       :show-scrollbar="false"
     >
-      <!-- 欢迎卡片 -->
+      <!-- 欢迎首页：AI 介绍 + 推荐问题标签云 -->
       <view class="welcome-card" v-if="!messages.length">
-        <view class="welcome-icon-wrap">
-          <Icon name="message" :size="40" color="#FF7E3D" />
+        <view class="assistant-card">
+          <view class="ai-avatar-wrap">
+            <text class="ai-avatar-emoji">🤖</text>
+            <view class="online-dot" />
+          </view>
+          <view class="assistant-meta">
+            <text class="welcome-title">宠迹 AI 助手</text>
+            <view class="welcome-status">
+              <text class="welcome-status-dot" />
+              <text class="welcome-status-text">在线 · 随时为你解答</text>
+            </view>
+          </view>
         </view>
-        <text class="welcome-title">你好，我是宠迹养宠顾问</text>
-        <text class="welcome-desc">关于养宠、训练、健康的问题，都可以问我</text>
 
-        <view class="suggest-list">
+        <text class="welcome-desc">科学养宠、健康咨询、日常训练…有疑问就来找我 🐾</text>
+
+        <!-- 能力介绍 -->
+        <view class="ability-row">
+          <view class="ability-chip"><text class="chip-emoji">🍚</text><text>喂养建议</text></view>
+          <view class="ability-chip"><text class="chip-emoji">💉</text><text>疫苗提醒</text></view>
+          <view class="ability-chip"><text class="chip-emoji">🏥</text><text>健康咨询</text></view>
+          <view class="ability-chip"><text class="chip-emoji">🎓</text><text>行为训练</text></view>
+        </view>
+
+        <!-- 推荐问题标签云 -->
+        <view class="suggest-title">
+          <text class="suggest-title-bar" />
+          <text class="suggest-title-text">你可以这样问我</text>
+        </view>
+
+        <view class="suggest-tags">
           <view v-if="suggestionsLoading" class="suggest-loading">
             <view class="loading-dot" />
             <view class="loading-dot" />
             <view class="loading-dot" />
-            <text class="suggest-loading-text">正在加载推荐词…</text>
+            <text class="suggest-loading-text">正在加载推荐问题…</text>
           </view>
           <template v-else>
             <view
-              class="suggest-item"
               v-for="(s, i) in suggestions"
               :key="i"
+              class="suggest-tag"
+              :class="'tone-' + (i % 4)"
               @click="sendMessage(s)"
             >
               <text class="suggest-text">{{ s }}</text>
-              <Icon name="chevron_right" :size="14" color="#C0C4CC" />
+            </view>
+            <view v-if="!suggestions.length" class="suggest-empty">
+              <text class="suggest-empty-text">直接输入你的问题，和我聊起来吧～</text>
             </view>
           </template>
         </view>
@@ -144,7 +171,7 @@ import { features, fetchFeatures } from '@/config/features.js';
 const userStore = useUserStore();
 const userInfo = computed(() => userStore.userInfo);
 
-// 养宠顾问功能开关（关闭时展示升级维护视图）
+// 养宠助手功能开关（关闭时展示升级维护视图）
 const adviserEnabled = computed(() => features.adviserEnabled !== false);
 
 // 用户头像：有头像用完整 URL，没有则空串（模板会降级为图标）
@@ -459,7 +486,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #F5F6FA;
+  background: linear-gradient(180deg, #FFEDDC 0%, #F8F9FC 26%, #F8F9FC 100%);
 }
 
 /* ========== 功能关闭态：升级维护提示 ========== */
@@ -498,7 +525,7 @@ onUnmounted(() => {
 
 /* ========== 自定义导航栏 ========== */
 .custom-nav {
-  background: linear-gradient(135deg, #FF934F 0%, #FF7E3D 100%);
+  background: $gradient-primary;
   padding: 0 32rpx 28rpx;
   box-shadow: 0 6rpx 24rpx rgba(255, 126, 61, 0.18);
 
@@ -606,39 +633,199 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 60rpx 32rpx 32rpx;
+  padding: 40rpx 28rpx 24rpx;
 
-  .welcome-icon-wrap {
-    width: 120rpx;
-    height: 120rpx;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #FFF0E6, #FFE0C7);
+  /* AI 助手介绍 */
+  .assistant-card {
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 28rpx;
-    box-shadow: 0 8rpx 24rpx rgba(255, 126, 61, 0.15);
-  }
+    width: 100%;
+    padding: 32rpx 36rpx;
+    border-radius: $radius-xl;
+    background: $gradient-card;
+    border: 1rpx solid rgba(255, 140, 66, 0.12);
+    box-shadow: $shadow-card;
 
-  .welcome-title {
-    font-size: 34rpx;
-    font-weight: 700;
-    color: #3D2B1D;
-    margin-bottom: 12rpx;
+    .ai-avatar-wrap {
+      position: relative;
+      width: 116rpx;
+      height: 116rpx;
+      border-radius: 38rpx;
+      background: $gradient-primary;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: $shadow-primary;
+      flex-shrink: 0;
+      animation: pet-float 3.4s ease-in-out infinite;
+
+      .ai-avatar-emoji {
+        font-size: 60rpx;
+      }
+
+      .online-dot {
+        position: absolute;
+        right: -4rpx;
+        bottom: -4rpx;
+        width: 26rpx;
+        height: 26rpx;
+        border-radius: 50%;
+        background: $accent-green;
+        border: 4rpx solid #fff;
+        box-shadow: 0 2rpx 8rpx rgba(123, 198, 126, 0.5);
+      }
+    }
+
+    .assistant-meta {
+      margin-left: 30rpx;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .welcome-title {
+      display: block;
+      font-size: 42rpx;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+    }
+
+    .welcome-status {
+      display: flex;
+      align-items: center;
+      margin-top: 12rpx;
+
+      .welcome-status-dot {
+        width: 12rpx;
+        height: 12rpx;
+        border-radius: 50%;
+        background: $accent-green;
+        margin-right: 8rpx;
+        animation: pet-breath 2.2s ease-in-out infinite;
+      }
+
+      .welcome-status-text {
+        font-size: $font-xs;
+        color: $text-secondary;
+      }
+    }
   }
 
   .welcome-desc {
-    font-size: 26rpx;
-    color: #A8A8B0;
-    margin-bottom: 40rpx;
-    text-align: center;
+    width: 100%;
+    font-size: $font-sm;
+    color: $text-secondary;
+    line-height: 1.7;
+    margin-top: 24rpx;
+    text-align: left;
   }
 
-  .suggest-list {
-    width: 100%;
+  /* 能力介绍标签 */
+  .ability-row {
     display: flex;
-    flex-direction: column;
-    gap: 20rpx;
+    flex-wrap: wrap;
+    gap: 14rpx;
+    width: 100%;
+    margin-top: 24rpx;
+
+    .ability-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8rpx;
+      padding: 10rpx 22rpx;
+      border-radius: $radius-round;
+      background: #fff;
+      box-shadow: $shadow-sm;
+      border: 1rpx solid $bg-input;
+
+      text {
+        font-size: $font-xs;
+        color: $text-secondary;
+        font-weight: $font-weight-medium;
+      }
+
+      .chip-emoji {
+        font-size: 26rpx;
+      }
+    }
+  }
+
+  /* 推荐标题 */
+  .suggest-title {
+    display: flex;
+    align-items: center;
+    align-self: flex-start;
+    margin-top: 40rpx;
+
+    .suggest-title-bar {
+      width: 8rpx;
+      height: 30rpx;
+      border-radius: $radius-round;
+      background: $gradient-primary;
+      margin-right: 14rpx;
+    }
+
+    .suggest-title-text {
+      font-size: $font-md;
+      color: $text-primary;
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  /* 标签云 */
+  .suggest-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+    width: 100%;
+    margin-top: 24rpx;
+    justify-content: center;
+  }
+
+  .suggest-tag {
+    padding: 20rpx 30rpx;
+    border-radius: $radius-round;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: $shadow-sm;
+
+    .suggest-text {
+      font-size: $font-sm;
+      font-weight: $font-weight-medium;
+      line-height: 1.4;
+    }
+
+    &:active {
+      animation: pet-pop 0.45s ease;
+      box-shadow: $shadow-md;
+    }
+
+    &.tone-0 {
+      background: $primary-lighter;
+      .suggest-text { color: $primary-dark; }
+    }
+
+    &.tone-1 {
+      background: #E8F3FF;
+      .suggest-text { color: #3C78C2; }
+    }
+
+    &.tone-2 {
+      background: #E8F7EB;
+      .suggest-text { color: #3E8F46; }
+    }
+
+    &.tone-3 {
+      background: #FFEBF0;
+      .suggest-text { color: #C25A76; }
+    }
+  }
+
+  .suggest-empty {
+    padding: 30rpx 0;
+
+    .suggest-empty-text {
+      font-size: $font-sm;
+      color: $text-hint;
+    }
   }
 
   .suggest-loading {
@@ -646,42 +833,24 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     gap: 10rpx;
-    padding: 40rpx 0;
+    width: 100%;
+    padding: 50rpx 0;
 
     .loading-dot {
-      width: 12rpx;
-      height: 12rpx;
+      width: 14rpx;
+      height: 14rpx;
       border-radius: 50%;
-      background-color: #FF7E3D;
-      animation: dotBounce 1.2s infinite ease-in-out;
+      background-color: $primary;
+      animation: pet-dotBounce 1.2s infinite ease-in-out;
 
       &:nth-child(2) { animation-delay: 0.15s; }
       &:nth-child(3) { animation-delay: 0.3s; }
     }
 
     .suggest-loading-text {
-      font-size: 24rpx;
-      color: #A8A8B0;
+      font-size: $font-xs;
+      color: $text-hint;
       margin-left: 8rpx;
-    }
-  }
-
-  .suggest-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: #fff;
-    border-radius: 24rpx;
-    padding: 28rpx 28rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
-
-    &:active {
-      background-color: #FFF9F4;
-    }
-
-    .suggest-text {
-      font-size: 28rpx;
-      color: #3D2B1D;
     }
   }
 }
@@ -711,53 +880,56 @@ onUnmounted(() => {
 }
 
 .msg-avatar {
-  width: 64rpx;
-  height: 64rpx;
+  width: 72rpx;
+  height: 72rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FF934F, #FF7E3D);
+  background: $gradient-primary;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4rpx 12rpx rgba(255, 126, 61, 0.2);
+  box-shadow: $shadow-primary;
+  border: 3rpx solid #fff;
 
   &.user-avatar {
-    background: linear-gradient(135deg, #9CA3AF, #6B7280);
-    box-shadow: 0 4rpx 12rpx rgba(107, 114, 128, 0.2);
-    margin-left: 16rpx; /* 与气泡之间的间距 */
+    background: linear-gradient(135deg, #A9B8D8 0%, #7E93B8 100%);
+    box-shadow: 0 4rpx 12rpx rgba(126, 147, 184, 0.24);
+    border-color: #fff;
   }
 
   .avatar-img {
     width: 100%;
     height: 100%;
     border-radius: 50%;
+    border: 2rpx solid #fff;
   }
 }
 
 .bubble {
-  max-width: 480rpx;
-  padding: 20rpx 24rpx;
-  border-radius: 24rpx;
-  font-size: 28rpx;
+  max-width: 500rpx;
+  padding: 22rpx 26rpx;
+  border-radius: $radius-lg;
+  font-size: $font-md;
   line-height: 1.6;
   word-break: break-all;
 
   &.assistant {
     background-color: #fff;
-    color: #3D2B1D;
+    color: $text-primary;
     margin-left: 16rpx;
-    border-bottom-left-radius: 8rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+    border-top-left-radius: $radius-sm;
+    border: 1rpx solid rgba(0, 0, 0, 0.04);
+    box-shadow: $shadow-card;
     // 流式输出时的平滑过渡
     transition: min-height 0.2s ease;
   }
 
   &.user {
-    background: linear-gradient(135deg, #FF934F, #FF7E3D);
+    background: $gradient-primary;
     color: #fff;
     margin-right: 0;
-    border-bottom-right-radius: 8rpx;
-    box-shadow: 0 4rpx 16rpx rgba(255, 126, 61, 0.2);
+    border-top-right-radius: $radius-sm;
+    box-shadow: $shadow-primary;
   }
 
   .bubble-text {
@@ -775,7 +947,7 @@ onUnmounted(() => {
   // 闪烁光标
   .cursor {
     display: inline-block;
-    color: #FF7E3D;
+    color: $primary;
     font-weight: 300;
     animation: cursorBlink 0.8s infinite;
     margin-left: 2rpx;
@@ -784,19 +956,14 @@ onUnmounted(() => {
 
 // 思考中的加载点
 .thinking-dot {
-  width: 12rpx;
-  height: 12rpx;
+  width: 14rpx;
+  height: 14rpx;
   border-radius: 50%;
-  background-color: #FF7E3D;
-  animation: thinkingBounce 1.4s infinite ease-in-out;
+  background-color: $primary;
+  animation: pet-dotBounce 1.3s infinite ease-in-out;
 
   &:nth-child(2) { animation-delay: 0.2s; }
   &:nth-child(3) { animation-delay: 0.4s; }
-}
-
-@keyframes thinkingBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-10rpx); opacity: 1; }
 }
 
 @keyframes cursorBlink {
@@ -817,17 +984,19 @@ onUnmounted(() => {
   gap: 16rpx;
   padding: 16rpx 24rpx 20rpx;
   background-color: #fff;
-  border-top: 1rpx solid #F0F0F0;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 -4rpx 20rpx rgba(52, 59, 76, 0.05);
 }
 
 .input-wrap {
   flex: 1;
-  background-color: #F5F6FA;
-  border-radius: 36rpx;
+  background-color: $bg-input;
+  border-radius: $radius-round;
   padding: 0 28rpx;
   height: 72rpx;
   display: flex;
   align-items: center;
+  border: 2rpx solid transparent;
 }
 
 .input {
@@ -853,13 +1022,13 @@ onUnmounted(() => {
   transition: all 0.2s;
 
   &.active {
-    background: linear-gradient(135deg, #FF934F, #FF7E3D);
-    box-shadow: 0 4rpx 12rpx rgba(255, 126, 61, 0.3);
+    background: $gradient-primary;
+    box-shadow: $shadow-primary;
   }
 
   &.loading {
-    background: linear-gradient(135deg, #F56C6C, #E54949);
-    box-shadow: 0 4rpx 12rpx rgba(245, 108, 108, 0.3);
+    background: linear-gradient(135deg, $danger, #E54949);
+    box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.3);
   }
 
   &:active {

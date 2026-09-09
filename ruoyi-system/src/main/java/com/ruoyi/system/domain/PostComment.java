@@ -68,4 +68,9 @@ public class PostComment implements Serializable
     @ApiModelProperty("评论者头像")
     @TableField(exist = false)
     private String userAvatar;
+
+    /** 被回复者用户名（仅子评论，关联查询） */
+    @ApiModelProperty("被回复者用户名")
+    @TableField(exist = false)
+    private String replyUserName;
 }

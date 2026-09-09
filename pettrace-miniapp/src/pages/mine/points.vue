@@ -42,6 +42,9 @@ import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
 import EmptyState from '@/components/EmptyState.vue';
 import { getPointsLog, getUserInfo } from '@/api/user.js';
 import { formatDateTime } from '@/utils/index.js';
+import { useUserStore } from '@/store/user.js';
+
+const userStore = useUserStore();
 
 const logList = ref([]);
 const loading = ref(false);
@@ -95,7 +98,12 @@ onReachBottom(() => {
 const fetchBalance = async () => {
   try {
     const res = await getUserInfo();
-    pointsBalance.value = res.points || 0;
+    // 接口返回 { code, msg, data: { ..., points } }
+    const info = (res && res.data) || res || {};
+    const points = info.points != null ? Number(info.points) : null;
+    pointsBalance.value = points != null
+      ? points
+      : (userStore.userInfo?.points != null ? Number(userStore.userInfo.points) : 0);
   } catch (e) {
     console.error('[积分明细] 获取积分余额失败:', e?.msg);
   }
@@ -136,7 +144,7 @@ const loadMore = () => {
 <style lang="scss" scoped>
 .points-page {
   min-height: 100vh;
-  background-color: #F6F7FB;
+  background-color: #F8F9FC;
   padding-bottom: 40rpx;
 }
 
@@ -145,7 +153,7 @@ const loadMore = () => {
   margin: 24rpx 32rpx;
   padding: 48rpx 40rpx;
   border-radius: 24rpx;
-  background: linear-gradient(135deg, #FF7E3D 0%, #FF5722 100%);
+  background: linear-gradient(135deg, #FF8C42 0%, #F06E2D 100%);
   color: #fff;
   box-shadow: 0 8rpx 24rpx rgba(255, 126, 61, 0.25);
 
@@ -198,7 +206,7 @@ const loadMore = () => {
     color: #fff;
 
     &.icon-plus {
-      background: linear-gradient(135deg, #FF7E3D 0%, #FF5722 100%);
+      background: linear-gradient(135deg, #FF8C42 0%, #F06E2D 100%);
     }
 
     &.icon-minus {
@@ -227,7 +235,7 @@ const loadMore = () => {
   .log-points {
     font-size: 32rpx;
     font-weight: 600;
-    color: #FF7E3D;
+    color: #FF8C42;
 
     &.minus {
       color: #606266;

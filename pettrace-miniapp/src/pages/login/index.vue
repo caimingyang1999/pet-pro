@@ -1,42 +1,56 @@
 <template>
   <view class="login-page">
-    <!-- 返回按钮 -->
-    <view class="nav-back" @click="goBack">
-      <u-icon name="arrow-left" color="#FF7E3D" size="20" />
+    <!-- 顶部渐变氛围 -->
+    <view class="page-bg">
+      <text class="bg-paw paw-1">🐾</text>
+      <text class="bg-paw paw-2">🐾</text>
+      <text class="bg-paw paw-3">🐾</text>
     </view>
 
-    <!-- 入口视图 -->
+    <!-- 返回按钮 -->
+    <view class="nav-back pet-press" @click="goBack">
+      <u-icon name="arrow-left" color="#fff" size="20" />
+    </view>
+
+    <!-- ========== 入口视图 ========== -->
     <view v-if="!showForm" class="login-entry">
-      <view class="guide-content">
-        <!-- 品牌 Logo -->
-        <view class="brand-zone">
-          <view class="logo-paw-wrap">
-            <view class="paw-ring">
-              <image class="paw-img" src="/static/log2.png" mode="aspectFit" />
-            </view>
+      <!-- 品牌 Logo -->
+      <view class="brand-zone">
+        <view class="logo-paw-wrap">
+          <view class="paw-ring">
+            <text class="ring-emoji">🐾</text>
           </view>
-          <text class="brand-name">宠迹</text>
+        </view>
+        <text class="brand-name">宠迹</text>
+        <text class="welcome-slogan">欢迎来到宠迹 🐾</text>
+        <text class="welcome-sub">记录毛孩子的成长点滴</text>
+      </view>
+
+      <view class="login-actions">
+        <button
+          class="primary-btn pet-press"
+          open-type="getPhoneNumber"
+          @getphonenumber="handleWxPhoneLogin"
+        >
+          <view class="btn-icon-wrap">
+            <u-icon name="weixin-fill" color="#fff" size="20" />
+          </view>
+          <text>微信手机号登录</text>
+        </button>
+
+        <view class="secondary-btn pet-press" @click="showForm = true">
+          <text>账号密码登录</text>
         </view>
 
-        <view class="login-actions">
-          <button
-            class="primary-btn"
-            open-type="getPhoneNumber"
-            @getphonenumber="handleWxPhoneLogin"
-          >
-            <view class="btn-icon-wrap">
-              <u-icon name="weixin-fill" color="#fff" size="20" />
-            </view>
-            <text>微信手机号登录</text>
-          </button>
+        <!-- 分隔线 -->
+        <view class="divider-row">
+          <view class="divider-line" />
+          <text class="divider-text">还没有账号？</text>
+          <view class="divider-line" />
+        </view>
 
-          <view class="secondary-btn" @click="showForm = true">
-            <text>账号密码登录</text>
-          </view>
-
-          <view class="register-link" @click="goRegister">
-            <text>注册新账号</text>
-          </view>
+        <view class="register-link pet-press" @click="goRegister">
+          <text>注册新账号</text>
         </view>
       </view>
 
@@ -48,30 +62,34 @@
       </view>
     </view>
 
-    <!-- 账号密码表单视图 -->
+    <!-- ========== 账号密码表单视图 ========== -->
     <view v-else class="login-form">
       <view class="form-header">
-        <view class="form-brand">
-          <image class="form-logo" src="/static/log2.png" mode="aspectFit" />
-          <text class="brand">宠迹</text>
+        <view class="form-logo">
+          <text>🐾</text>
         </view>
-        <text class="welcome">欢迎回来</text>
+        <text class="form-title">欢迎回来</text>
+        <text class="welcome-sub">登录后继续管理毛孩子的档案吧</text>
       </view>
 
       <view class="form-wrap">
         <view class="input-group">
-          <u-icon name="account" color="#FF7E3D" size="18" />
+          <view class="input-icon">
+            <text>👤</text>
+          </view>
           <input
             v-model="form.username"
             class="form-input"
             type="text"
-            placeholder="请输入手机号/用户名"
+            placeholder="请输入手机号 / 用户名"
             placeholder-class="input-placeholder"
           />
         </view>
 
         <view class="input-group">
-          <u-icon name="lock" color="#FF7E3D" size="18" />
+          <view class="input-icon">
+            <text>🔒</text>
+          </view>
           <input
             v-model="form.password"
             class="form-input"
@@ -79,8 +97,8 @@
             placeholder="请输入密码"
             placeholder-class="input-placeholder"
           />
-          <view class="eye-icon" @click="showPassword = !showPassword">
-            <u-icon :name="showPassword ? 'eye-off' : 'eye'" color="#FF7E3D" size="18" />
+          <view class="eye-icon" :class="{ open: showPassword }" @click="showPassword = !showPassword">
+            <u-icon :name="showPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
           </view>
         </view>
 
@@ -88,11 +106,8 @@
           <text class="forgot-text">忘记密码？</text>
         </view>
 
-        <view
-          class="submit-btn"
-          :class="{ loading: loading }"
-          @click="handleLogin"
-        >
+        <view class="submit-btn pet-press" :class="{ loading }" @click="handleLogin">
+          <view v-if="loading" class="loading-ring" />
           <text v-if="!loading">登 录</text>
           <text v-else>登录中...</text>
         </view>
@@ -103,9 +118,19 @@
         <text class="link" @click="goRegister">立即注册</text>
       </view>
 
-      <view class="back-to-entry" @click="showForm = false">
-        <u-icon name="arrow-left" color="#FF7E3D" size="14" />
-        <text>其他登录方式</text>
+      <!-- 其他登录方式 -->
+      <view class="other-login">
+        <view class="other-divider">
+          <view class="line" />
+          <text class="other-text">其他登录方式</text>
+          <view class="line" />
+        </view>
+        <view class="other-icons">
+          <view class="wx-circle pet-press" @click="showForm = false">
+            <u-icon name="weixin-fill" color="#fff" size="22" />
+          </view>
+        </view>
+        <text class="other-tip">微信登录将直接使用手机号授权</text>
       </view>
     </view>
   </view>
@@ -165,12 +190,12 @@ const handleWxPhoneLogin = async (e) => {
   console.log('[getPhoneNumber返回]', detail);
   const errMsg = detail.errMsg || '';
 
-  // 授权未成功：区分“用户取消”和“接口/权限错误”，避免误导
+  // 授权未成功：区分"用户取消"和"接口/权限错误"，避免误导
   if (!errMsg.includes('ok')) {
     if (/cancel|deny|denied|用户取消|拒绝/i.test(errMsg)) {
       showToast('已取消授权');
     } else if (detail.errno === 102 || /jsapi has no permission|no permission/i.test(errMsg)) {
-      showToast('当前小程序未开通“获取手机号”权限：个人主体或未认证的小程序不支持，请使用已认证的企业主体 AppID');
+      showToast('当前小程序未开通"获取手机号"权限：个人主体或未认证的小程序不支持，请使用已认证的企业主体 AppID');
     } else {
       showToast(`授权失败：${errMsg}`);
     }
@@ -179,14 +204,13 @@ const handleWxPhoneLogin = async (e) => {
 
   const phoneCode = detail.code;
   if (!phoneCode) {
-    showToast('获取手机号失败，请确认小程序已开通“获取手机号”权限');
+    showToast('获取手机号失败，请确认小程序已开通"获取手机号"权限');
     return;
   }
 
   try {
     showLoading('登录中...');
     const code = await userStore.getWxCode();
-
     await userStore.wxPhoneLogin({
       code,
       phoneCode,
@@ -222,129 +246,172 @@ const goRegister = () => {
 
 <style lang="scss" scoped>
 .login-page {
-  min-height: 100vh;
-  background-color: #F6F7FB;
   position: relative;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: linear-gradient(175deg, #FFE8D6 0%, #FFFAF5 38%, #F8F9FC 100%);
+  overflow: hidden;
+}
+
+/* 背景装饰爪印 */
+.page-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  .bg-paw {
+    position: absolute;
+    opacity: 0.14;
+  }
+
+  .paw-1 {
+    top: 100rpx;
+    right: -36rpx;
+    font-size: 200rpx;
+    transform: rotate(22deg);
+  }
+
+  .paw-2 {
+    top: 560rpx;
+    left: -50rpx;
+    font-size: 160rpx;
+    transform: rotate(-18deg);
+  }
+
+  .paw-3 {
+    right: 80rpx;
+    bottom: 180rpx;
+    font-size: 90rpx;
+    opacity: 0.09;
+    transform: rotate(10deg);
+  }
 }
 
 .nav-back {
   position: absolute;
   top: calc(var(--status-bar-height) + 20rpx);
   left: 24rpx;
-  width: 60rpx;
-  height: 60rpx;
+  width: 68rpx;
+  height: 68rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-
-  &:active {
-    opacity: 0.6;
-  }
+  z-index: 20;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1rpx solid rgba(255, 140, 66, 0.16);
+  backdrop-filter: blur(10rpx);
+  -webkit-backdrop-filter: blur(10rpx);
 }
 
 /* ========== 入口视图 ========== */
 .login-entry {
-  padding: 140rpx 64rpx 60rpx;
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
   box-sizing: border-box;
+  padding: 170rpx 64rpx 50rpx;
 }
 
-.guide-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
-/* ---------- 品牌 Logo ---------- */
 .brand-zone {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 60rpx;
-  margin-bottom: 100rpx;
+  margin-bottom: 96rpx;
+
+  .logo-paw-wrap {
+    width: 220rpx;
+    height: 220rpx;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.68);
+    border: 1rpx solid rgba(255, 140, 66, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 18rpx 48rpx rgba(255, 140, 66, 0.16);
+    margin-bottom: 36rpx;
+
+    .paw-ring {
+      width: 158rpx;
+      height: 158rpx;
+      border-radius: 50%;
+      background: $gradient-primary;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 -8rpx 18rpx rgba(202, 78, 19, 0.24), $shadow-primary;
+      animation: pet-float 3.4s ease-in-out infinite;
+
+      .ring-emoji {
+        font-size: 84rpx;
+        filter: drop-shadow(0 4rpx 6rpx rgba(183, 59, 8, 0.2));
+      }
+    }
+  }
+
+  .brand-name {
+    font-size: 72rpx;
+    font-weight: $font-weight-bold;
+    color: $primary-dark;
+    letter-spacing: 16rpx;
+    text-indent: 16rpx;
+    text-shadow: 0 4rpx 16rpx rgba(255, 140, 66, 0.18);
+  }
+
+  .welcome-slogan {
+    margin-top: 18rpx;
+    font-size: $font-lg;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+  }
+
+  .welcome-sub {
+    margin-top: 10rpx;
+    font-size: $font-sm;
+    color: $text-hint;
+  }
 }
 
-.logo-paw-wrap {
-  width: 220rpx;
-  height: 220rpx;
-  border-radius: 50%;
-  background: linear-gradient(150deg, #FFF0E6 0%, #FFE0C7 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 16rpx 40rpx rgba(255, 126, 61, 0.12);
-  margin-bottom: 32rpx;
-}
-
-.paw-ring {
-  width: 152rpx;
-  height: 152rpx;
-  border-radius: 50%;
-  background: linear-gradient(150deg, #FFB27A 0%, #FF7E3D 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 -6rpx 16rpx rgba(230, 106, 26, 0.25), 0 8rpx 20rpx rgba(255, 140, 66, 0.35);
-}
-
-.paw-img {
-  width: 104rpx;
-  height: 104rpx;
-}
-
-.brand-name {
-  font-size: 52rpx;
-  font-weight: 700;
-  color: #FF7E3D;
-  letter-spacing: 12rpx;
-  text-indent: 12rpx;
-}
-
-/* ---------- 登录操作 ---------- */
 .login-actions {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28rpx;
+  gap: 26rpx;
 }
 
 .primary-btn {
   width: 100%;
-  height: 96rpx;
-  background: linear-gradient(135deg, #FF934F 0%, #FF7E3D 55%, #F4672A 100%);
+  height: 100rpx;
+  background: $gradient-primary;
   color: #fff;
-  border-radius: 48rpx;
+  border-radius: $radius-round;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  font-weight: 600;
-  box-shadow: 0 12rpx 28rpx rgba(255, 126, 61, 0.32);
+  font-size: $font-lg;
+  font-weight: $font-weight-bold;
+  box-shadow: $shadow-primary;
   border: none;
   padding: 0;
-  line-height: 96rpx;
+  line-height: 100rpx;
 
   &::after {
     border: none;
   }
 
   &:active {
-    transform: scale(0.97);
-    box-shadow: 0 6rpx 16rpx rgba(255, 126, 61, 0.25);
+    transform: scale(0.96) translateY(2rpx);
   }
 
   .btn-icon-wrap {
     width: 48rpx;
     height: 48rpx;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.24);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -354,87 +421,110 @@ const goRegister = () => {
 
 .secondary-btn {
   width: 100%;
-  height: 96rpx;
-  background: #fff;
-  border: 2rpx solid #FFD9B8;
-  color: #FF7E3D;
-  border-radius: 48rpx;
+  height: 100rpx;
+  background: rgba(255, 255, 255, 0.86);
+  border: 2rpx solid rgba(255, 140, 66, 0.4);
+  color: $primary-dark;
+  border-radius: $radius-round;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  font-weight: 500;
-  box-shadow: 0 4rpx 12rpx rgba(255, 126, 61, 0.06);
-  transition: all 0.2s;
+  font-size: $font-lg;
+  font-weight: $font-weight-medium;
+  box-shadow: $shadow-sm;
+}
 
-  &:active {
-    transform: scale(0.97);
-    background: #FFF7F0;
+.divider-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 20rpx;
+  margin-top: 16rpx;
+
+  .divider-line {
+    flex: 1;
+    height: 1rpx;
+    background: rgba(160, 160, 160, 0.35);
+  }
+
+  .divider-text {
+    font-size: $font-xs;
+    color: $text-hint;
   }
 }
 
 .register-link {
-  margin-top: 12rpx;
-  padding: 16rpx;
+  padding: 12rpx 44rpx;
+  border-radius: $radius-round;
 
   text {
-    font-size: 28rpx;
-    color: #FF8A4D;
-    font-weight: 500;
+    font-size: $font-md;
+    color: $primary-dark;
+    font-weight: $font-weight-medium;
   }
 
   &:active {
-    opacity: 0.7;
+    background: rgba(255, 140, 66, 0.12);
   }
 }
 
 .agreement-tips {
+  position: absolute;
+  bottom: 36rpx;
   text-align: center;
-  font-size: 24rpx;
-  color: #A8A8B0;
-  line-height: 1.6;
-  padding-bottom: 40rpx;
+  font-size: $font-xs;
+  color: $text-hint;
+  line-height: 1.7;
 
   .link {
-    color: #FF7E3D;
+    color: $primary;
+    text-decoration: underline;
   }
 }
 
 /* ========== 表单视图 ========== */
 .login-form {
-  padding: 180rpx 56rpx 60rpx;
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 150rpx 56rpx 60rpx;
+  display: flex;
+  flex-direction: column;
 }
 
 .form-header {
-  margin-bottom: 72rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 80rpx;
 
-  .form-brand {
+  .form-logo {
+    width: 130rpx;
+    height: 130rpx;
+    border-radius: 44rpx;
+    background: $gradient-primary;
     display: flex;
     align-items: center;
-    margin-bottom: 20rpx;
+    justify-content: center;
+    box-shadow: $shadow-primary;
+    margin-bottom: 30rpx;
 
-    .form-logo {
-      width: 64rpx;
-      height: 64rpx;
-      border-radius: 50%;
-      margin-right: 20rpx;
-      background: linear-gradient(150deg, #FFB27A 0%, #FF7E3D 100%);
-      padding: 8rpx;
-      box-sizing: border-box;
-    }
-
-    .brand {
-      font-size: 44rpx;
-      font-weight: 700;
-      color: #FF7E3D;
-      letter-spacing: 6rpx;
+    text {
+      font-size: 66rpx;
     }
   }
 
-  .welcome {
-    display: block;
-    font-size: 28rpx;
-    color: #9B9BA5;
+  .form-title {
+    font-size: 52rpx;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+  }
+
+  .welcome-sub {
+    margin-top: 12rpx;
+    font-size: $font-sm;
+    color: $text-hint;
   }
 }
 
@@ -445,31 +535,51 @@ const goRegister = () => {
 .input-group {
   display: flex;
   align-items: center;
-  height: 100rpx;
-  background: #FFFFFF;
-  border-radius: 24rpx;
-  padding: 0 28rpx;
-  margin-bottom: 24rpx;
-  border: 2rpx solid #FFE8D6;
-  box-shadow: 0 4rpx 16rpx rgba(255, 126, 61, 0.05);
-  transition: all 0.2s;
+  height: 104rpx;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: $radius-md;
+  padding: 0 26rpx;
+  margin-bottom: 26rpx;
+  border: 2rpx solid rgba(255, 140, 66, 0.18);
+  box-shadow: $shadow-sm;
+  transition: all 0.3s ease;
 
   &:focus-within {
-    border-color: #FF7E3D;
-    box-shadow: 0 4rpx 20rpx rgba(255, 126, 61, 0.12);
+    border-color: $primary;
+    box-shadow: 0 4rpx 24rpx rgba(255, 140, 66, 0.16);
+    transform: translateY(-2rpx);
+  }
+
+  .input-icon {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 18rpx;
+    background: $primary-lighter;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text {
+      font-size: 30rpx;
+    }
   }
 
   .form-input {
     flex: 1;
     margin-left: 18rpx;
-    font-size: 28rpx;
-    color: #333;
+    font-size: $font-md;
+    color: $text-primary;
     height: 100%;
   }
 
   .eye-icon {
-    padding: 16rpx;
-    margin-right: -16rpx;
+    padding: 18rpx;
+    margin-right: -18rpx;
+    transition: transform 0.3s ease;
+
+    &.open {
+      animation: pet-spin 0.35s ease;
+    }
 
     &:active {
       opacity: 0.6;
@@ -478,18 +588,18 @@ const goRegister = () => {
 }
 
 .input-placeholder {
-  color: #BBBBBB;
-  font-size: 28rpx;
+  color: $text-placeholder;
+  font-size: $font-md;
 }
 
 .forgot-wrap {
   display: flex;
   justify-content: flex-end;
-  margin: 8rpx 8rpx 44rpx;
+  margin: 4rpx 8rpx 42rpx;
 
   .forgot-text {
-    font-size: 26rpx;
-    color: #FF8A4D;
+    font-size: $font-sm;
+    color: $text-hint;
   }
 
   &:active {
@@ -499,53 +609,96 @@ const goRegister = () => {
 
 .submit-btn {
   width: 100%;
-  height: 100rpx;
-  background: linear-gradient(135deg, #FF934F 0%, #FF7E3D 55%, #F4672A 100%);
+  height: 104rpx;
+  background: $gradient-primary;
   color: #fff;
-  border-radius: 50rpx;
+  border-radius: $radius-round;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  font-weight: 600;
-  box-shadow: 0 12rpx 28rpx rgba(255, 126, 61, 0.32);
-  transition: all 0.2s;
+  gap: 14rpx;
+  font-size: $font-lg;
+  font-weight: $font-weight-bold;
+  box-shadow: $shadow-primary;
+  letter-spacing: 8rpx;
 
   &:active {
-    transform: scale(0.98);
+    transform: scale(0.97) translateY(2rpx);
   }
 
   &.loading {
-    opacity: 0.8;
+    opacity: 0.85;
+  }
+
+  .loading-ring {
+    width: 32rpx;
+    height: 32rpx;
+    border-radius: 50%;
+    border: 4rpx solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    animation: pet-spin 0.8s linear infinite;
   }
 }
 
 .form-footer {
   text-align: center;
-  font-size: 26rpx;
-  color: #9B9BA5;
-  margin-bottom: 40rpx;
+  font-size: $font-sm;
+  color: $text-secondary;
+  margin-bottom: 36rpx;
 
   .link {
-    color: #FF7E3D;
-    font-weight: 600;
-  }
-
-  &:active {
-    opacity: 0.8;
+    color: $primary;
+    font-weight: $font-weight-medium;
   }
 }
 
-.back-to-entry {
+.other-login {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  font-size: 26rpx;
-  color: #FF8A4D;
+  margin-top: auto;
 
-  &:active {
-    opacity: 0.7;
+  .other-divider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 20rpx;
+
+    .line {
+      flex: 1;
+      height: 1rpx;
+      background: rgba(160, 160, 160, 0.3);
+    }
+
+    .other-text {
+      font-size: $font-xs;
+      color: $text-hint;
+    }
+  }
+
+  .other-icons {
+    margin-top: 28rpx;
+  }
+
+  .wx-circle {
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5FC967 0%, #39B54A 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8rpx 24rpx rgba(57, 181, 74, 0.32);
+
+    &:active {
+      transform: scale(0.9);
+    }
+  }
+
+  .other-tip {
+    margin-top: 16rpx;
+    font-size: $font-xs;
+    color: $text-placeholder;
   }
 }
 </style>

@@ -1,75 +1,196 @@
 /**
- * 宠迹主题变量
- * 这里是uni-app内置的常用样式变量
+ * ============================================================
+ *  宠迹（PetTrace）设计体系 v2.0
+ *  定位：温暖 / 治愈 / 圆润 / 可爱 / 精致
+ *  说明：本文件由 uni-app 自动注入每个 <style lang="scss">，
+ *        仅用于声明变量与 mixin，禁止在此输出实际 CSS 规则。
+ * ============================================================
  */
 
-/* 主题色 */
-$u-primary: #FF7E3D;
-$u-primary-light: #FFB07C;
-$u-primary-dark: #E66A1A;
+/* ========== 一、主色调（暖橙色系） ========== */
+$primary: #FF8C42;            // 主橙色
+$primary-light: #FFB26B;      // 浅橙
+$primary-lighter: #FFE8D6;    // 极浅橙（背景高亮）
+$primary-dark: #F06E2D;       // 深橙（按压态）
 
-/* 辅助色 */
-$u-success: #52C41A;
-$u-warning: #FAAD14;
-$u-error: #FF4D4F;
-$u-info: #1890FF;
+/* ========== 二、辅助色 ========== */
+$accent-green: #7BC67E;       // 薄荷绿：成功 / 宠物健康
+$accent-blue: #6EB5FF;        // 天空蓝：信息 / 链接
+$accent-pink: #FF9EB5;        // 樱花粉：可爱元素 / 点赞
+$accent-yellow: #FFC94D;      // 暖黄：积分 / 星级
 
-/* 文字色 */
-$u-main-color: #333333;
-$u-content-color: #666666;
-$u-tips-color: #999999;
-$u-light-color: #CCCCCC;
+/* ========== 三、渐变方案（统一 135deg 或同向） ========== */
+$gradient-primary: linear-gradient(135deg, #FFB26B 0%, #FF8C42 50%, #F06E2D 100%);
+$gradient-primary-soft: linear-gradient(135deg, #FFF3E8 0%, #FFE2C7 100%);
+$gradient-card: linear-gradient(160deg, #FFF5EC 0%, #FFE8D6 100%);
+$gradient-hero: linear-gradient(180deg, #FFE8D6 0%, #F8F9FC 100%);
+$gradient-success: linear-gradient(135deg, #9CD6A0 0%, #7BC67E 100%);
+$gradient-info: linear-gradient(135deg, #92C8FF 0%, #6EB5FF 100%);
+$gradient-warning: linear-gradient(135deg, #FFD873 0%, #FFC94D 100%);
 
-/* 背景色 */
-$u-bg-color: #F5F5F5;
-$u-bg-color-white: #FFFFFF;
+/* ========== 四、背景色 ========== */
+$bg-page: #F8F9FC;            // 页面背景（略带冷调）
+$bg-card: #FFFFFF;            // 卡片背景
+$bg-input: #F5F6FA;           // 输入框背景
+$bg-mask: rgba(0, 0, 0, 0.4); // 遮罩
 
-/* 边框色 */
-$u-border-color: #EEEEEE;
+/* ========== 五、文字色 ========== */
+$text-primary: #2D2D2D;       // 主文字
+$text-secondary: #6B6B6B;     // 次要文字
+$text-hint: #A0A0A0;          // 提示文字
+$text-white: #FFFFFF;         // 白色文字
+$text-on-primary: #FFFFFF;    // 主色上文字
+$text-placeholder: #C4C6D0;   // 占位符文字
 
-/* 宠迹自定义主题变量 */
-$pet-primary: #FF7E3D;
-$pet-primary-light: #FFF0E6;
-$pet-success: #67C23A;
-$pet-warning: #E6A23C;
-$pet-danger: #F56C6C;
-$pet-info: #909399;
+/* ========== 六、功能色 ========== */
+$success: #7BC67E;
+$warning: #FFC94D;
+$danger: #FF6B6B;
+$info: #A0A0A0;
 
-$pet-text-main: #303133;
-$pet-text-regular: #606266;
-$pet-text-secondary: #909399;
-$pet-text-placeholder: #C0C4CC;
+/* ========== 七、尺寸与圆角 ========== */
+$radius-xs: 8rpx;
+$radius-sm: 12rpx;
+$radius-md: 20rpx;
+$radius-lg: 28rpx;
+$radius-xl: 40rpx;
+$radius-round: 999rpx;
 
-$pet-border: #DCDFE6;
-$pet-border-light: #E4E7ED;
-$pet-border-lighter: #EBEEF5;
+/* ========== 八、间距 ========== */
+$spacing-xs: 8rpx;
+$spacing-sm: 16rpx;
+$spacing-md: 24rpx;
+$spacing-lg: 32rpx;
+$spacing-xl: 48rpx;
+$spacing-xxl: 64rpx;
 
-$pet-bg: #F5F7FA;
-$pet-bg-white: #FFFFFF;
+/* ========== 九、阴影（柔和有层次） ========== */
+$shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+$shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+$shadow-primary: 0 8rpx 24rpx rgba(255, 140, 66, 0.35);
+$shadow-card: 0 4rpx 20rpx rgba(52, 59, 76, 0.06);
 
-/* scss混入，用于快速设置圆角卡片 */
+/* ========== 十、字体 ========== */
+$font-xs: 22rpx;
+$font-sm: 24rpx;
+$font-md: 28rpx;
+$font-lg: 32rpx;
+$font-xl: 36rpx;
+$font-xxl: 44rpx;
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 600;
+
+/* ============================================================
+ *  uView Plus 主题变量覆盖（保证组件库整体换肤）
+ * ============================================================ */
+$u-primary: $primary;
+$u-primary-light: $primary-light;
+$u-primary-dark: $primary-dark;
+$u-success: $success;
+$u-warning: $warning;
+$u-error: $danger;
+$u-info: $info;
+
+$u-main-color: $text-primary;
+$u-content-color: $text-secondary;
+$u-tips-color: $text-hint;
+$u-light-color: $text-placeholder;
+$u-bg-color: $bg-page;
+$u-bg-color-white: $bg-card;
+$u-border-color: #F0F1F5;
+
+/* ============================================================
+ *  旧版宠迹变量映射（兼容存量页面，指向新设计令牌）
+ * ============================================================ */
+$pet-primary: $primary;
+$pet-primary-light: $primary-lighter;
+$pet-success: $success;
+$pet-warning: $warning;
+$pet-danger: $danger;
+$pet-info: $info;
+
+$pet-text-main: $text-primary;
+$pet-text-regular: $text-secondary;
+$pet-text-secondary: $text-hint;
+$pet-text-placeholder: $text-placeholder;
+
+$pet-border: #E5E7EE;
+$pet-border-light: #EBEDF2;
+$pet-border-lighter: #F0F1F5;
+
+$pet-bg: $bg-page;
+$pet-bg-white: $bg-card;
+
+/* ============================================================
+ *  常用 Mixin
+ * ============================================================ */
+
+/** 白色圆角卡片（默认新视觉：柔和阴影 + 28rpx 圆角） */
 @mixin pet-card {
   background-color: $pet-bg-white;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
 }
 
+/** 居中弹性容器 */
 @mixin pet-flex-center {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/** 单行省略 */
 @mixin pet-ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/** 多行省略 */
 @mixin pet-multi-ellipsis($lines: 2) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: $lines;
   overflow: hidden;
+}
+
+/** 卡片外容器：白色圆角 + 轻柔阴影（模板中用 class 方式复用） */
+@mixin pet-panel {
+  background: $bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+}
+
+/** 主渐变按钮外观（供胶囊按钮复用） */
+@mixin pet-btn-gradient {
+  background-image: $gradient-primary;
+  color: $text-white;
+  box-shadow: $shadow-primary;
+}
+
+/** 胶囊标签 */
+@mixin pet-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 18rpx;
+  border-radius: $radius-round;
+  font-size: $font-xs;
+  line-height: 1.5;
+}
+
+/** 按压反馈（统一 0.3s ease 过渡 + 0.96 缩放） */
+@mixin pet-press {
+  transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.88;
+  }
+}
+
+/** 安全区底部间距（适配 iPhone 底部横条） */
+@mixin pet-safe-bottom($extra: 0) {
+  padding-bottom: calc(env(safe-area-inset-bottom) + #{$extra});
 }

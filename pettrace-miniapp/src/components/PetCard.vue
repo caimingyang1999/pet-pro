@@ -1,35 +1,46 @@
 <template>
-  <view class="pet-card" @click="handleClick">
-    <view class="pet-avatar-wrap">
+  <view class="pet-card" :class="petClass" @click="handleClick">
+    <!-- 头像 + 类型角标 -->
+    <view class="avatar-wrap">
       <image
         class="pet-avatar"
-        :src="fullImageUrl(pet.avatar) || '/static/default-pet.png'"
+        :src="avatarSrc"
         mode="aspectFill"
       />
-      <!-- 性别角标 -->
-      <view class="gender-badge" :class="pet.gender === '1' ? 'male' : 'female'">
-        <text>{{ pet.gender === '1' ? '♂' : '♀' }}</text>
+      <view class="type-badge">
+        <text>{{ petEmoji }}</text>
       </view>
     </view>
+
+    <!-- 信息 -->
     <view class="pet-info">
       <view class="name-row">
         <text class="name">{{ pet.name }}</text>
         <text v-if="pet.sterilization === '1'" class="sterilization-tag">已绝育</text>
       </view>
-      <text class="breed">{{ pet.breed || '未知品种' }}</text>
-      <view class="detail-row">
-        <text v-if="pet.weight" class="detail-item">⚖ {{ pet.weight }}kg</text>
-        <text v-if="pet.color" class="detail-item">{{ pet.color }}</text>
-        <text v-if="pet.birthday" class="detail-item">{{ formatBirthday(pet.birthday) }}</text>
+      <view class="breed-row">
+        <text class="breed">{{ pet.breed || '未知品种' }}</text>
+        <text class="gender-text" :class="pet.gender === '1' ? 'male' : 'female'">
+          {{ pet.gender === '1' ? '♂ 弟弟' : '♀ 妹妹' }}
+        </text>
       </view>
-      <!-- 疫苗提示 -->
+      <view class="detail-row">
+        <text v-if="pet.weight" class="detail-item">
+          <text class="detail-emoji">⚖️</text>{{ pet.weight }}kg
+        </text>
+        <text v-if="pet.color" class="detail-item color-chip">{{ pet.color }}</text>
+        <text v-if="ageText" class="detail-item">
+          <text class="detail-emoji">🎂</text>{{ ageText }}
+        </text>
+      </view>
       <view v-if="pet.vaccineList && pet.vaccineList.length" class="vaccine-hint">
-        <text class="vaccine-icon">💉</text>
+        <text class="vaccine-emoji">💉</text>
         <text class="vaccine-text">{{ pet.vaccineList.length }} 条疫苗记录</text>
       </view>
     </view>
-    <view class="arrow-icon">
-      <u-icon name="arrow-right" color="#C0C4CC" size="16" />
+
+    <view class="arrow">
+      <Icon name="chevron_right" :size="20" color="#B0B2BE" />
     </view>
   </view>
 </template>
@@ -37,6 +48,7 @@
 <script setup>
 import { computed } from 'vue';
 import { fullImageUrl } from '@/utils/index.js';
+import Icon from '@/components/Icon.vue';
 
 const props = defineProps({
   pet: {
@@ -47,15 +59,31 @@ const props = defineProps({
 
 const emit = defineEmits(['click']);
 
-const handleClick = () => {
-  emit('click', props.pet.id);
-};
+const avatarSrc = computed(() => fullImageUrl(props.pet.avatar) || '/static/default-pet.png');
 
-/** 格式化生日：显示年龄或日期 */
+const petEmoji = computed(() => {
+  const text = `${props.pet.breed || ''}${props.pet.name || ''}`;
+  if (/猫|布偶|英短|美短|暹罗|橘/.test(text)) return '🐱';
+  if (/狗|犬|柯基|金毛|泰迪|拉布拉多|边牧|柴犬/.test(text)) return '🐶';
+  if (/兔/.test(text)) return '🐰';
+  if (/仓鼠|鼠/.test(text)) return '🐹';
+  return '🐾';
+});
+
+const petClass = computed(() => {
+  const text = `${props.pet.breed || ''}${props.pet.name || ''}`;
+  if (/猫|布偶|英短|美短|暹罗|橘/.test(text)) return 'card-cat';
+  if (/狗|犬|柯基|金毛|泰迪|拉布拉多|边牧|柴犬/.test(text)) return 'card-dog';
+  return 'card-other';
+});
+
+const ageText = computed(() => formatBirthday(props.pet.birthday));
+
+/** 格式化生日：显示年龄 */
 const formatBirthday = (birthday) => {
   if (!birthday) return '';
   const birth = new Date(birthday);
-  if (isNaN(birth.getTime())) return birthday;
+  if (isNaN(birth.getTime())) return '';
   const now = new Date();
   let ageYears = now.getFullYear() - birth.getFullYear();
   const monthDiff = now.getMonth() - birth.getMonth();
@@ -63,122 +91,170 @@ const formatBirthday = (birthday) => {
     ageYears--;
   }
   if (ageYears > 0) return ageYears + '岁';
-  // 小于 1 岁，按月计算
   let ageMonths = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
   if (now.getDate() < birth.getDate()) ageMonths--;
   return ageMonths <= 0 ? '刚出生' : ageMonths + '个月';
+};
+
+const handleClick = () => {
+  emit('click', props.pet.id);
 };
 </script>
 
 <style lang="scss" scoped>
 .pet-card {
-  @include pet-card;
+  position: relative;
   display: flex;
   align-items: center;
-  position: relative;
-  margin-bottom: 20rpx;
+  padding: 28rpx 24rpx;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: 24rpx;
+  animation: pet-slideIn 0.42s ease both;
+  transition: transform 0.3s ease;
 
-  .pet-avatar-wrap {
+  &:active {
+    transform: scale(0.975);
+  }
+
+  &.card-cat {
+    background: linear-gradient(135deg, #FFF3E9 0%, #FFE3E9 100%);
+  }
+
+  &.card-dog {
+    background: linear-gradient(135deg, #E9F3FF 0%, #ECE7FF 100%);
+  }
+
+  &.card-other {
+    background: linear-gradient(135deg, #EBF7EC 0%, #FFF7DD 100%);
+  }
+
+  .avatar-wrap {
     position: relative;
+    flex-shrink: 0;
     margin-right: 24rpx;
 
     .pet-avatar {
-      width: 130rpx;
-      height: 130rpx;
-      border-radius: 20rpx;
-      background-color: $pet-bg;
+      width: 120rpx;
+      height: 120rpx;
+      border-radius: 50%;
+      background: #fff;
+      border: 4rpx solid rgba(255, 255, 255, 0.92);
+      box-shadow: $shadow-sm;
     }
 
-    .gender-badge {
+    .type-badge {
       position: absolute;
+      right: -8rpx;
       bottom: -4rpx;
-      right: -4rpx;
-      width: 36rpx;
-      height: 36rpx;
+      width: 48rpx;
+      height: 48rpx;
       border-radius: 50%;
+      background: #fff;
+      border: 2rpx solid #fff;
+      box-shadow: $shadow-sm;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22rpx;
-      font-weight: bold;
-      color: #fff;
 
-      &.male {
-        background-color: #4A90D9;
-      }
-      &.female {
-        background-color: #E8738A;
+      text {
+        font-size: 28rpx;
+        line-height: 1;
       }
     }
   }
 
   .pet-info {
     flex: 1;
-    display: flex;
-    flex-direction: column;
     min-width: 0;
 
     .name-row {
       display: flex;
       align-items: center;
-      margin-bottom: 6rpx;
 
       .name {
-        font-size: 32rpx;
-        color: $pet-text-main;
-        font-weight: 700;
-        margin-right: 12rpx;
+        font-size: $font-xl;
+        color: $text-primary;
+        font-weight: $font-weight-bold;
+        @include pet-ellipsis;
+        max-width: 210rpx;
       }
 
       .sterilization-tag {
-        font-size: 20rpx;
-        color: $pet-primary;
-        background-color: $pet-primary-light;
-        padding: 2rpx 10rpx;
-        border-radius: 6rpx;
+        margin-left: 10rpx;
+        font-size: $font-xs;
+        color: $accent-green;
+        background: rgba(255, 255, 255, 0.78);
+        padding: 3rpx 14rpx;
+        border-radius: $radius-round;
+        flex-shrink: 0;
       }
     }
 
-    .breed {
-      font-size: 26rpx;
-      color: $pet-text-secondary;
-      margin-bottom: 10rpx;
-      @include pet-ellipsis;
+    .breed-row {
+      display: flex;
+      align-items: center;
+      gap: 10rpx;
+      margin-top: 10rpx;
+
+      .breed {
+        font-size: $font-xs;
+        color: $primary-dark;
+        background: rgba(255, 255, 255, 0.78);
+        padding: 4rpx 16rpx;
+        border-radius: $radius-round;
+        @include pet-ellipsis;
+        max-width: 190rpx;
+      }
+
+      .gender-text {
+        font-size: $font-xs;
+        font-weight: $font-weight-medium;
+
+        &.male { color: $accent-blue; }
+        &.female { color: $accent-pink; }
+      }
     }
 
     .detail-row {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 16rpx;
-      margin-bottom: 8rpx;
+      margin-top: 10rpx;
 
       .detail-item {
-        font-size: 22rpx;
-        color: $pet-text-secondary;
-        background-color: $pet-bg;
-        padding: 2rpx 12rpx;
-        border-radius: 6rpx;
+        font-size: $font-xs;
+        color: $text-secondary;
+      }
+
+      .color-chip {
+        padding: 2rpx 14rpx;
+        background: rgba(255, 255, 255, 0.72);
+        border-radius: $radius-round;
       }
     }
 
     .vaccine-hint {
       display: flex;
       align-items: center;
+      margin-top: 10rpx;
 
-      .vaccine-icon {
-        font-size: 22rpx;
+      .vaccine-emoji {
+        font-size: 20rpx;
         margin-right: 6rpx;
       }
 
       .vaccine-text {
-        font-size: 22rpx;
-        color: $pet-success;
+        font-size: $font-xs;
+        color: $accent-green;
+        font-weight: $font-weight-medium;
       }
     }
   }
 
-  .arrow-icon {
-    margin-left: 12rpx;
+  .arrow {
+    margin-left: 10rpx;
     flex-shrink: 0;
   }
 }

@@ -6,7 +6,11 @@
   </view>
 
   <!-- 骨架屏模式 -->
-  <view v-else class="skeleton-list">
+  <view
+    v-else
+    class="skeleton-list"
+    :class="{ 'skeleton-grid': mode === 'skeleton' && type === 'product' }"
+  >
     <view
       v-for="i in count"
       :key="i"
@@ -31,11 +35,10 @@
         </view>
       </template>
 
-      <!-- 商品类型骨架（横向卡片） -->
+      <!-- 商品类型骨架（双列竖版卡片） -->
       <template v-else-if="type === 'product'">
-        <view class="skeleton-img square" />
+        <view class="skeleton-img product-img" />
         <view class="product-info">
-          <view class="skeleton-line w-tag" />
           <view class="skeleton-line w-name" />
           <view class="skeleton-line w-name short" />
           <view class="skeleton-line w-price" />
@@ -118,11 +121,18 @@ const props = defineProps({
   gap: 20rpx;
 }
 
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+}
+
 .skeleton-card {
   background-color: $pet-bg-white;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  border-radius: $radius-md;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: $shadow-sm;
 }
 
 /* 通用骨架线条 */
@@ -156,7 +166,7 @@ const props = defineProps({
   .skeleton-avatar {
     width: 80rpx;
     height: 80rpx;
-    border-radius: 8rpx;
+    border-radius: 50%;
     margin-right: 16rpx;
     flex-shrink: 0;
   }
@@ -200,46 +210,36 @@ const props = defineProps({
   }
 }
 
-/* ============ 商品类型骨架 ============ */
+/* ============ 商品类型骨架（双列） ============ */
 .skeleton-product {
-  display: flex;
-  overflow: hidden;
   padding: 0;
 
-  .skeleton-img.square {
-    flex-shrink: 0;
-    width: 240rpx;
-    height: 240rpx;
+  .product-img {
+    width: 100%;
+    height: 326rpx;
     border-radius: 0;
   }
 
   .product-info {
-    flex: 1;
-    padding: 20rpx 24rpx;
+    padding: 20rpx 20rpx 28rpx;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 12rpx;
-  }
-
-  .w-tag {
-    width: 80rpx;
-    height: 28rpx;
-    border-radius: 14rpx;
+    gap: 16rpx;
   }
 
   .w-name {
-    width: 90%;
-    height: 32rpx;
+    width: 92%;
+    height: 28rpx;
 
     &.short {
-      width: 65%;
+      width: 62%;
     }
   }
 
   .w-price {
-    width: 130rpx;
-    height: 40rpx;
+    width: 150rpx;
+    height: 32rpx;
+    margin-top: 6rpx;
   }
 }
 

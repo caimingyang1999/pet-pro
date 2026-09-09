@@ -181,7 +181,7 @@ onShow(() => {
 <style lang="scss" scoped>
 .follows-page {
   min-height: 100vh;
-  background-color: #F5F6FA;
+  background-color: #F8F9FC;
   display: flex;
   flex-direction: column;
 }
@@ -213,7 +213,7 @@ onShow(() => {
 
     &.active {
       .tab-label { color: #1A1A1A; font-weight: 700; }
-      .tab-count { color: #FF7E3D; }
+      .tab-count { color: #FF8C42; }
 
       &::after {
         content: '';
@@ -271,8 +271,8 @@ onShow(() => {
       padding: 8rpx 28rpx;
       border-radius: 24rpx;
       font-size: 24rpx;
-      color: #FF7E3D;
-      border: 2rpx solid #FF7E3D;
+      color: #FF8C42;
+      border: 2rpx solid #FF8C42;
       background-color: #fff;
       flex-shrink: 0;
 

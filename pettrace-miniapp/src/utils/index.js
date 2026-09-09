@@ -7,8 +7,8 @@ import { SERVER_BASE } from '@/api/request.js';
  */
 export function formatTime(time) {
   if (!time) return '';
-  const date = new Date(time);
-  if (isNaN(date.getTime())) return time;
+  const date = parseServerTime(time);
+  if (!date) return time;
 
   const now = Date.now();
   const diff = now - date.getTime();
@@ -47,8 +47,8 @@ export function formatTime(time) {
  */
 export function formatDateTime(time) {
   if (!time) return '';
-  const date = new Date(time);
-  if (isNaN(date.getTime())) return time;
+  const date = parseServerTime(time);
+  if (!date) return time;
   const y = date.getFullYear();
   const m = pad(date.getMonth() + 1);
   const d = pad(date.getDate());
@@ -59,6 +59,30 @@ export function formatDateTime(time) {
 
 function pad(n) {
   return String(n).padStart(2, '0');
+}
+
+/**
+ * 解析后端时间字符串。
+ * 后端统一返回东八区时间（yyyy-MM-dd HH:mm:ss），这里显式带上 +08:00，
+ * 避免不同小程序运行环境把无时区字符串解析成 UTC/本地时间导致显示偏差。
+ */
+function parseServerTime(time) {
+  let date = null;
+  if (typeof time === 'string') {
+    const m = time.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (m) {
+      const sec = m[6] || '00';
+      date = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${sec}+08:00`);
+    } else {
+      date = new Date(time);
+    }
+  } else {
+    date = new Date(time);
+  }
+  if (!date || isNaN(date.getTime())) {
+    return null;
+  }
+  return date;
 }
 
 /**

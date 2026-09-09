@@ -1,21 +1,30 @@
 <template>
   <view class="register-page">
+    <!-- 背景爪印 -->
+    <view class="page-bg">
+      <text class="bg-paw paw-1">🐾</text>
+      <text class="bg-paw paw-2">🐾</text>
+    </view>
+
     <!-- 返回按钮 -->
-    <view class="nav-back" @click="goBack">
-      <u-icon name="arrow-left" color="#FF7E3D" size="20" />
+    <view class="nav-back pet-press" @click="goBack">
+      <u-icon name="arrow-left" color="#fff" size="20" />
     </view>
 
     <view class="register-content">
       <!-- 标题 -->
       <view class="register-header">
+        <view class="header-logo">
+          <text>🐾</text>
+        </view>
         <text class="title">创建账号</text>
-        <text class="subtitle">加入宠迹大家庭 🐾</text>
+        <text class="subtitle">加入宠迹大家庭，记录毛孩子的每一天</text>
       </view>
 
       <!-- 表单 -->
       <view class="form-wrap">
         <view class="input-group">
-          <u-icon name="phone" color="#FF7E3D" size="18" />
+          <view class="input-icon"><text>📱</text></view>
           <input
             v-model="form.phone"
             class="form-input"
@@ -27,7 +36,7 @@
         </view>
 
         <view class="input-group">
-          <u-icon name="lock" color="#FF7E3D" size="18" />
+          <view class="input-icon"><text>🔒</text></view>
           <input
             v-model="form.password"
             class="form-input"
@@ -35,13 +44,13 @@
             placeholder="设置密码（6-20位）"
             placeholder-class="input-placeholder"
           />
-          <view class="eye-icon" @click="showPassword = !showPassword">
-            <u-icon :name="showPassword ? 'eye-off' : 'eye'" color="#FF7E3D" size="18" />
+          <view class="eye-icon" :class="{ open: showPassword }" @click="showPassword = !showPassword">
+            <u-icon :name="showPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
           </view>
         </view>
 
         <view class="input-group">
-          <u-icon name="lock" color="#FF7E3D" size="18" />
+          <view class="input-icon"><text>🔐</text></view>
           <input
             v-model="form.confirmPassword"
             class="form-input"
@@ -49,27 +58,24 @@
             placeholder="确认密码"
             placeholder-class="input-placeholder"
           />
-          <view class="eye-icon" @click="showConfirmPassword = !showConfirmPassword">
-            <u-icon :name="showConfirmPassword ? 'eye-off' : 'eye'" color="#FF7E3D" size="18" />
+          <view class="eye-icon" :class="{ open: showConfirmPassword }" @click="showConfirmPassword = !showConfirmPassword">
+            <u-icon :name="showConfirmPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
           </view>
         </view>
 
         <view class="input-group">
-          <u-icon name="account" color="#FF7E3D" size="18" />
+          <view class="input-icon"><text>🧸</text></view>
           <input
             v-model="form.nickname"
             class="form-input"
             type="text"
-            placeholder="昵称（选填）"
+            placeholder="昵称（选填，如：毛毛妈妈）"
             placeholder-class="input-placeholder"
           />
         </view>
 
-        <view
-          class="submit-btn"
-          :class="{ loading: loading }"
-          @click="handleRegister"
-        >
+        <view class="submit-btn pet-press" :class="{ loading }" @click="handleRegister">
+          <view v-if="loading" class="loading-ring" />
           <text v-if="!loading">注 册</text>
           <text v-else>注册中...</text>
         </view>
@@ -78,18 +84,20 @@
       <!-- 其他注册方式 -->
       <view class="other-login">
         <view class="divider-wrap">
-          <view class="divider-line"></view>
+          <view class="divider-line" />
           <text class="divider-text">其他方式</text>
-          <view class="divider-line"></view>
+          <view class="divider-line" />
         </view>
 
         <button
-          class="wx-btn-plain"
+          class="wx-btn-plain pet-press"
           open-type="getPhoneNumber"
           @getphonenumber="handleWxPhoneLogin"
         >
-          <u-icon name="weixin-fill" color="#07C160" size="20" />
-          <text>微信手机号一键注册/登录</text>
+          <view class="wx-icon-circle">
+            <u-icon name="weixin-fill" color="#fff" size="20" />
+          </view>
+          <text>微信手机号一键注册 / 登录</text>
         </button>
       </view>
 
@@ -184,12 +192,12 @@ const handleWxPhoneLogin = async (e) => {
   console.log('[getPhoneNumber返回]', detail);
   const errMsg = detail.errMsg || '';
 
-  // 授权未成功：区分“用户取消”和“接口/权限错误”，避免误导
+  // 授权未成功：区分"用户取消"和"接口/权限错误"，避免误导
   if (!errMsg.includes('ok')) {
     if (/cancel|deny|denied|用户取消|拒绝/i.test(errMsg)) {
       showToast('已取消授权');
     } else if (detail.errno === 102 || /jsapi has no permission|no permission/i.test(errMsg)) {
-      showToast('当前小程序未开通“获取手机号”权限：个人主体或未认证的小程序不支持，请使用已认证的企业主体 AppID');
+      showToast('当前小程序未开通"获取手机号"权限：个人主体或未认证的小程序不支持，请使用已认证的企业主体 AppID');
     } else {
       showToast(`授权失败：${errMsg}`);
     }
@@ -198,14 +206,13 @@ const handleWxPhoneLogin = async (e) => {
 
   const phoneCode = detail.code;
   if (!phoneCode) {
-    showToast('获取手机号失败，请确认小程序已开通“获取手机号”权限');
+    showToast('获取手机号失败，请确认小程序已开通"获取手机号"权限');
     return;
   }
 
   try {
     showLoading('登录中...');
     const code = await userStore.getWxCode();
-
     await userStore.wxPhoneLogin({
       code,
       phoneCode,
@@ -229,81 +236,152 @@ const goLogin = () => {
 
 <style lang="scss" scoped>
 .register-page {
-  min-height: 100vh;
-  background-color: #F6F7FB;
   position: relative;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: linear-gradient(175deg, #FFE8D6 0%, #FFFAF5 36%, #F8F9FC 100%);
+  overflow: hidden;
+}
+
+.page-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  .bg-paw {
+    position: absolute;
+    opacity: 0.12;
+    font-size: 170rpx;
+  }
+
+  .paw-1 {
+    top: 130rpx;
+    right: -30rpx;
+    transform: rotate(20deg);
+  }
+
+  .paw-2 {
+    bottom: 120rpx;
+    left: -40rpx;
+    transform: rotate(-18deg);
+    font-size: 130rpx;
+  }
 }
 
 .nav-back {
   position: absolute;
   top: calc(var(--status-bar-height) + 20rpx);
   left: 24rpx;
-  width: 60rpx;
-  height: 60rpx;
+  width: 68rpx;
+  height: 68rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-
-  &:active {
-    opacity: 0.6;
-  }
+  z-index: 20;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1rpx solid rgba(255, 140, 66, 0.16);
+  backdrop-filter: blur(10rpx);
+  -webkit-backdrop-filter: blur(10rpx);
 }
 
 .register-content {
-  padding: 180rpx 56rpx 60rpx;
+  position: relative;
+  z-index: 2;
+  padding: 150rpx 56rpx 50rpx;
 }
 
 .register-header {
-  margin-bottom: 80rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 68rpx;
+
+  .header-logo {
+    width: 120rpx;
+    height: 120rpx;
+    border-radius: 40rpx;
+    background: $gradient-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: $shadow-primary;
+    margin-bottom: 28rpx;
+
+    text {
+      font-size: 62rpx;
+    }
+  }
 
   .title {
     display: block;
-    font-size: 44rpx;
-    font-weight: 700;
-    color: #FF7E3D;
-    margin-bottom: 16rpx;
+    font-size: 52rpx;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
   }
 
   .subtitle {
     display: block;
-    font-size: 28rpx;
-    color: #A8A8B0;
+    margin-top: 12rpx;
+    font-size: $font-sm;
+    color: $text-hint;
+    text-align: center;
   }
 }
 
 .form-wrap {
-  margin-bottom: 60rpx;
+  margin-bottom: 56rpx;
 }
 
 .input-group {
   display: flex;
   align-items: center;
-  height: 100rpx;
-  background: #FFFFFF;
-  border-radius: 24rpx;
-  padding: 0 28rpx;
-  margin-bottom: 24rpx;
-  border: 2rpx solid #FFE8D6;
-  box-shadow: 0 4rpx 16rpx rgba(255, 126, 61, 0.05);
-  transition: all 0.2s;
+  height: 104rpx;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: $radius-md;
+  padding: 0 26rpx;
+  margin-bottom: 26rpx;
+  border: 2rpx solid rgba(255, 140, 66, 0.18);
+  box-shadow: $shadow-sm;
+  transition: all 0.3s ease;
 
   &:focus-within {
-    border-color: #FF7E3D;
-    box-shadow: 0 4rpx 20rpx rgba(255, 126, 61, 0.12);
+    border-color: $primary;
+    box-shadow: 0 4rpx 24rpx rgba(255, 140, 66, 0.16);
+    transform: translateY(-2rpx);
+  }
+
+  .input-icon {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 18rpx;
+    background: $primary-lighter;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    text {
+      font-size: 30rpx;
+    }
   }
 
   .form-input {
     flex: 1;
-    margin-left: 16rpx;
-    font-size: 28rpx;
-    color: #333;
+    margin-left: 18rpx;
+    font-size: $font-md;
+    color: $text-primary;
     height: 100%;
   }
 
   .eye-icon {
-    padding: 16rpx;
-    margin-right: -16rpx;
+    padding: 18rpx;
+    margin-right: -18rpx;
+    transition: transform 0.3s ease;
+
+    &.open {
+      animation: pet-spin 0.35s ease;
+    }
 
     &:active {
       opacity: 0.6;
@@ -312,31 +390,41 @@ const goLogin = () => {
 }
 
 .input-placeholder {
-  color: #BBBBBB;
-  font-size: 28rpx;
+  color: $text-placeholder;
+  font-size: $font-md;
 }
 
 .submit-btn {
   width: 100%;
-  height: 100rpx;
-  background: linear-gradient(135deg, #FF934F 0%, #FF7E3D 55%, #F4672A 100%);
+  height: 104rpx;
+  background: $gradient-primary;
   color: #fff;
-  border-radius: 50rpx;
+  border-radius: $radius-round;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  font-weight: 600;
-  box-shadow: 0 12rpx 28rpx rgba(255, 126, 61, 0.32);
-  transition: all 0.2s;
-  margin-top: 48rpx;
+  gap: 14rpx;
+  font-size: $font-lg;
+  font-weight: $font-weight-bold;
+  box-shadow: $shadow-primary;
+  letter-spacing: 8rpx;
+  margin-top: 44rpx;
 
   &:active {
-    transform: scale(0.96);
+    transform: scale(0.97) translateY(2rpx);
   }
 
   &.loading {
-    opacity: 0.8;
+    opacity: 0.85;
+  }
+
+  .loading-ring {
+    width: 32rpx;
+    height: 32rpx;
+    border-radius: 50%;
+    border: 4rpx solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    animation: pet-spin 0.8s linear infinite;
   }
 }
 
@@ -346,59 +434,66 @@ const goLogin = () => {
   .divider-wrap {
     display: flex;
     align-items: center;
-    margin-bottom: 32rpx;
+    margin-bottom: 30rpx;
   }
 
   .divider-line {
     flex: 1;
     height: 1rpx;
-    background: #FFE8D6;
+    background: rgba(160, 160, 160, 0.32);
   }
 
   .divider-text {
-    font-size: 24rpx;
-    color: #A8A8B0;
+    font-size: $font-xs;
+    color: $text-hint;
     padding: 0 20rpx;
   }
 
   .wx-btn-plain {
     width: 100%;
-    height: 88rpx;
-    background: #fff;
-    border: 2rpx solid #FFD9B8;
-    border-radius: 44rpx;
+    height: 96rpx;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2rpx solid rgba(255, 140, 66, 0.4);
+    border-radius: $radius-round;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28rpx;
-    color: #FF7E3D;
-    font-weight: 500;
+    font-size: $font-md;
+    color: $primary-dark;
+    font-weight: $font-weight-medium;
     padding: 0;
-    line-height: 88rpx;
+    line-height: 96rpx;
+    box-shadow: $shadow-sm;
 
     &::after {
       border: none;
     }
 
     &:active {
-      background: #FFF7F0;
       transform: scale(0.96);
     }
 
-    text {
-      margin-left: 12rpx;
+    .wx-icon-circle {
+      width: 52rpx;
+      height: 52rpx;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #5FC967 0%, #39B54A 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 14rpx;
     }
   }
 }
 
 .login-tip {
   text-align: center;
-  font-size: 26rpx;
-  color: #9B9BA5;
+  font-size: $font-sm;
+  color: $text-secondary;
 
   .link {
-    color: #FF7E3D;
-    font-weight: 600;
+    color: $primary;
+    font-weight: $font-weight-medium;
   }
 
   &:active {

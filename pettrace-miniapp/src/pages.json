@@ -5,11 +5,11 @@
       "style": {
         "navigationStyle": "custom",
         "navigationBarTitleText": "宠迹",
-        "navigationBarBackgroundColor": "#F5F6FA",
+        "navigationBarBackgroundColor": "#F8F9FC",
         "navigationBarTextStyle": "black",
         "enablePullDownRefresh": true,
-        "backgroundColor": "#F5F6FA",
-        "backgroundColorTop": "#F5F6FA",
+        "backgroundColor": "#F8F9FC",
+        "backgroundColorTop": "#F8F9FC",
         "backgroundTextStyle": "dark",
         "onReachBottomDistance": 50
       }
@@ -56,7 +56,7 @@
       "path": "pages/chat/index",
       "style": {
         "navigationStyle": "custom",
-        "navigationBarTitleText": "养宠顾问",
+        "navigationBarTitleText": "养宠助手",
         "navigationBarBackgroundColor": "#FF8C42",
         "navigationBarTextStyle": "white"
       }
@@ -100,7 +100,7 @@
       "style": {
         "navigationStyle": "custom",
         "navigationBarTitleText": "我的",
-        "navigationBarBackgroundColor": "#F6F7FB",
+        "navigationBarBackgroundColor": "#F8F9FC",
         "navigationBarTextStyle": "black"
       }
     },
@@ -109,7 +109,7 @@
       "style": {
         "navigationBarTitleText": "我的动态",
         "enablePullDownRefresh": true,
-        "backgroundColor": "#EDEDED",
+        "backgroundColor": "#F8F9FC",
         "backgroundTextStyle": "dark"
       }
     },
@@ -142,7 +142,7 @@
       "style": {
         "navigationBarTitleText": "积分明细",
         "enablePullDownRefresh": true,
-        "backgroundColor": "#F6F7FB",
+        "backgroundColor": "#F8F9FC",
         "backgroundTextStyle": "dark"
       }
     },
@@ -171,7 +171,7 @@
       "style": {
         "navigationBarTitleText": "我的点赞",
         "enablePullDownRefresh": true,
-        "backgroundColor": "#F5F6FA"
+        "backgroundColor": "#F8F9FC"
       }
     },
     {
@@ -186,14 +186,14 @@
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "宠迹",
     "navigationBarBackgroundColor": "#FFFFFF",
-    "backgroundColor": "#F5F6FA",
+    "backgroundColor": "#F8F9FC",
     "app-plus": {
-      "background": "#F5F6FA"
+      "background": "#F8F9FC"
     }
   },
   "tabBar": {
-    "color": "#999999",
-    "selectedColor": "#FF7E3D",
+    "color": "#A0A0A0",
+    "selectedColor": "#FF8C42",
     "borderStyle": "white",
     "backgroundColor": "#FFFFFF",
     "list": [
@@ -213,7 +213,7 @@
         "pagePath": "pages/chat/index",
         "iconPath": "static/tabbar/chat.png",
         "selectedIconPath": "static/tabbar/chat-active.png",
-        "text": "养宠顾问"
+        "text": "养宠助手"
       },
       {
         "pagePath": "pages/mine/index",

@@ -181,7 +181,7 @@ const goUserHome = (userId) => {
 <style lang="scss" scoped>
 .search-page {
   min-height: 100vh;
-  background-color: #F5F6FA;
+  background-color: #F8F9FC;
 }
 
 .search-header {
@@ -231,7 +231,7 @@ const goUserHome = (userId) => {
 
   .cancel-btn {
     font-size: 28rpx;
-    color: #FF7E3D;
+    color: #FF8C42;
     flex-shrink: 0;
   }
 }

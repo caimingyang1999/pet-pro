@@ -15,26 +15,37 @@
     <!-- 正常内容 -->
     <template v-else-if="product">
       <!-- 图片轮播 -->
-      <swiper
-        v-if="imageList.length > 0"
-        class="image-swiper"
-        :indicator-dots="imageList.length > 1"
-        indicator-color="rgba(255,255,255,0.4)"
-        indicator-active-color="#FF8C42"
-        circular
-      >
-        <swiper-item v-for="(img, idx) in imageList" :key="idx">
-          <image
-            class="swiper-image"
-            :src="img"
-            mode="aspectFill"
-            @error="onSwiperError(idx)"
-            @click="previewImage(idx)"
+      <view class="detail-hero" v-if="imageList.length > 0">
+        <swiper
+          class="image-swiper"
+          :autoplay="imageList.length > 1"
+          :interval="3800"
+          :duration="400"
+          :circular="true"
+          @change="onSwiperChange"
+        >
+          <swiper-item v-for="(img, idx) in imageList" :key="idx">
+            <image
+              class="swiper-image"
+              :src="img"
+              mode="aspectFill"
+              @error="onSwiperError(idx)"
+              @click="previewImage(idx)"
+            />
+          </swiper-item>
+        </swiper>
+        <!-- 自定义指示器：当前项拉长胶囊 -->
+        <view class="hero-dots" v-if="imageList.length > 1">
+          <view
+            v-for="(img, idx) in imageList"
+            :key="'dot-' + idx"
+            class="hero-dot"
+            :class="{ active: idx === currentSwiper }"
           />
-        </swiper-item>
-      </swiper>
+        </view>
+      </view>
       <!-- 单张兜底 -->
-      <view v-else class="single-image-wrap">
+      <view v-else class="detail-hero single-image-wrap">
         <image
           v-if="displayImage"
           class="single-image"
@@ -59,8 +70,10 @@
         <!-- 价格 -->
         <view class="price-section">
           <view class="price-main">
+            <text class="price-coin">🪙</text>
             <text class="points-num">{{ product.pointsPrice }}</text>
             <text class="points-unit">积分</text>
+            <view class="price-paw">🐾</view>
           </view>
           <!-- 兑换统计 -->
           <view class="exchange-stats">
@@ -186,6 +199,7 @@ import { showToast, showLoading, hideLoading, checkLogin, fullImageUrl } from '@
 const product = ref(null);
 const productId = ref('');
 const loading = ref(true);
+const currentSwiper = ref(0);
 
 // ---- 收货地址 ----
 const addressList = ref([]);
@@ -264,6 +278,10 @@ const previewImage = (idx) => {
     current: idx,
     urls: imageList.value,
   });
+};
+
+const onSwiperChange = (e) => {
+  currentSwiper.value = e.detail.current;
 };
 
 // ---- 收货地址工具 ----
@@ -398,6 +416,35 @@ onMounted(() => {
 }
 
 // ===== 图片轮播 =====
+.detail-hero {
+  position: relative;
+  background-color: #FFF;
+
+  .hero-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 24rpx;
+    display: flex;
+    justify-content: center;
+    gap: 10rpx;
+    pointer-events: none;
+
+    .hero-dot {
+      width: 12rpx;
+      height: 12rpx;
+      border-radius: $radius-round;
+      background: rgba(255, 255, 255, 0.55);
+      transition: all 0.3s ease;
+
+      &.active {
+        width: 44rpx;
+        background: #fff;
+      }
+    }
+  }
+}
+
 .image-swiper {
   width: 100%;
   height: 560rpx;
@@ -425,7 +472,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   @include pet-flex-center;
-  background-color: #F0F0F0;
+  background-color: $bg-input;
 
   .placeholder-icon {
     font-size: 80rpx;
@@ -435,9 +482,10 @@ onMounted(() => {
 // ===== 商品信息卡片 =====
 .info-card {
   background-color: $pet-bg-white;
-  margin: 20rpx;
-  border-radius: 20rpx;
-  padding: 28rpx;
+  margin: 20rpx 24rpx;
+  border-radius: $radius-lg;
+  padding: 32rpx;
+  box-shadow: $shadow-card;
 
   .name-row {
     display: flex;
@@ -445,16 +493,17 @@ onMounted(() => {
     margin-bottom: 20rpx;
 
     .product-name {
-      font-size: 36rpx;
+      font-size: $font-xl;
       color: $pet-text-main;
-      font-weight: 700;
+      font-weight: $font-weight-bold;
       flex: 1;
+      line-height: 1.45;
     }
 
     .status-badge {
       font-size: 22rpx;
       padding: 6rpx 18rpx;
-      border-radius: 20rpx;
+      border-radius: $radius-round;
       font-weight: 500;
     }
 
@@ -471,23 +520,41 @@ onMounted(() => {
 
   .price-section {
     margin-bottom: 20rpx;
+    padding: 24rpx;
+    border-radius: $radius-md;
+    background: linear-gradient(135deg, #FFF6EC 0%, #FFEFDD 100%);
 
     .price-main {
       display: flex;
       align-items: baseline;
-      margin-bottom: 12rpx;
+      position: relative;
 
       .points-num {
-        font-size: 52rpx;
+        font-size: 58rpx;
         color: $pet-primary;
-        font-weight: 800;
+        font-weight: $font-weight-bold;
         line-height: 1;
+        margin-left: 4rpx;
       }
 
       .points-unit {
-        font-size: 26rpx;
-        color: $pet-text-secondary;
+        font-size: $font-sm;
+        color: $primary-dark;
         margin-left: 10rpx;
+      }
+
+      .price-coin {
+        font-size: 36rpx;
+        align-self: center;
+      }
+
+      .price-paw {
+        position: absolute;
+        right: 0;
+        top: -6rpx;
+        font-size: 52rpx;
+        opacity: 0.22;
+        transform: rotate(-14deg);
       }
     }
 
@@ -496,12 +563,12 @@ onMounted(() => {
       align-items: center;
 
       .stat-item {
-        font-size: 24rpx;
-        color: $pet-text-secondary;
+        font-size: $font-sm;
+        color: $text-secondary;
       }
 
       .stat-value {
-        color: $pet-text-regular;
+        color: $primary-dark;
         font-weight: 500;
       }
 
@@ -514,11 +581,12 @@ onMounted(() => {
 
   .product-desc {
     display: block;
-    font-size: 26rpx;
-    color: $pet-text-secondary;
-    line-height: 1.6;
+    font-size: $font-sm;
+    color: $text-secondary;
+    line-height: 1.7;
     padding-top: 20rpx;
     border-top: 1rpx solid $pet-border-lighter;
+    @include pet-multi-ellipsis(3);
   }
 }
 
@@ -526,9 +594,10 @@ onMounted(() => {
 .detail-card,
 .tips-card {
   background-color: $pet-bg-white;
-  margin: 0 20rpx 20rpx;
-  border-radius: 20rpx;
-  padding: 28rpx;
+  margin: 0 24rpx 24rpx;
+  border-radius: $radius-lg;
+  padding: 30rpx 32rpx;
+  box-shadow: $shadow-card;
 }
 
 // ===== 区块标题 =====

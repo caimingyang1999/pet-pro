@@ -1,10 +1,9 @@
 <template>
-  <view class="page-container">
-    <!-- 顶部渐变头部 -->
+  <view class="pet-page">
+    <!-- ========== 顶部渐变头部 ========== -->
     <view class="header-section">
-      <view class="header-bg" />
-      <view class="header-decor decor-1" />
-      <view class="header-decor decor-2" />
+      <view class="header-decor paw-1">🐾</view>
+      <view class="header-decor paw-2">🐾</view>
 
       <!-- 自定义导航栏 -->
       <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
@@ -12,26 +11,22 @@
           <view class="nav-back" @click="goBack">
             <Icon name="chevron_left" :size="22" color="#fff" />
           </view>
-          <text class="nav-bar-title">我的宠物</text>
+          <text class="nav-title">我的宠物</text>
+          <view class="nav-add" @click="goAdd">
+            <Icon name="plus" :size="20" color="#fff" />
+          </view>
         </view>
       </view>
 
-      <view class="header-content">
-        <view class="header-left">
-          <text class="header-title">我的宠物</text>
-          <view class="header-count-wrap" v-if="petList.length">
-            <view class="count-icon">
-              <Icon name="paw" :size="12" color="#fff" />
-            </view>
-            <text class="header-count">共 {{ petList.length }} 只小可爱</text>
-          </view>
-          <text class="header-subtitle" v-else>添加你的第一只宠物吧</text>
+      <view class="header-main">
+        <view class="header-info">
+          <text class="header-title">我的爱宠 🐾</text>
+          <text class="header-sub" v-if="petList.length">共 {{ petList.length }} 只毛孩子陪伴着你</text>
+          <text class="header-sub" v-else>从第一只毛孩子开始记录吧</text>
         </view>
-        <view class="header-right" @click="goAdd">
-          <view class="add-btn">
-            <Icon name="plus" :size="16" color="#fff" />
-            <text class="add-text">添加</text>
-          </view>
+        <view class="header-count" v-if="petList.length">
+          <text class="count-num">{{ petList.length }}</text>
+          <text class="count-unit">位家人</text>
         </view>
       </view>
     </view>
@@ -41,73 +36,82 @@
       <LoadingState mode="skeleton" type="pet" :count="3" />
     </view>
 
-    <!-- 宠物卡片列表 -->
+    <!-- 宠物卡片列表 + 添加卡片 -->
     <view class="pet-list" v-else-if="petList.length">
       <view
-        class="pet-item"
+        class="pet-card"
+        :class="petClass(pet)"
         v-for="pet in petList"
         :key="pet.id"
         @click="goDetail(pet.id)"
       >
-        <!-- 宠物图片 -->
-        <view class="pet-avatar-wrap">
+        <!-- 头像 + 类型角标 -->
+        <view class="avatar-wrap">
           <image
             class="pet-avatar"
-            :src="fullImageUrl(pet.avatar) || '/static/tabbar/pet.png'"
+            :src="fullImageUrl(pet.avatar) || '/static/default-pet.png'"
             mode="aspectFill"
           />
-          <view class="gender-badge" :class="pet.gender === '1' ? 'male' : 'female'">
-            <text>{{ pet.gender === '1' ? '♂' : '♀' }}</text>
+          <view class="type-badge">
+            <text>{{ petEmoji(pet) }}</text>
           </view>
         </view>
 
-        <!-- 宠物信息 -->
+        <!-- 信息区 -->
         <view class="pet-info">
-          <view class="pet-name-row">
+          <view class="name-row">
             <text class="pet-name">{{ pet.name }}</text>
             <text v-if="pet.sterilization === '1'" class="sterilization-tag">已绝育</text>
           </view>
-          <text class="pet-breed">{{ pet.breed || '未知品种' }}</text>
-          <view class="pet-tags">
-            <text v-if="pet.weight" class="pet-tag">
-              <Icon name="weight" :size="10" color="#FF7E3D" /> {{ pet.weight }}kg
+          <view class="breed-row">
+            <text class="pet-breed">{{ pet.breed || '未知品种' }}</text>
+            <text class="gender-text" :class="pet.gender === '1' ? 'male' : 'female'">
+              {{ pet.gender === '1' ? '♂ 弟弟' : '♀ 妹妹' }}
             </text>
-            <text v-if="pet.color" class="pet-tag">{{ pet.color }}</text>
-            <text v-if="getAge(pet.birthday)" class="pet-tag">{{ getAge(pet.birthday) }}</text>
+          </view>
+          <view class="meta-row">
+            <text v-if="getAge(pet.birthday)" class="meta-item">
+              <text class="meta-emoji">🎂</text>
+              {{ getAge(pet.birthday) }}
+            </text>
+            <text v-if="pet.weight" class="meta-item">
+              <text class="meta-emoji">⚖️</text>
+              {{ pet.weight }}kg
+            </text>
+            <text v-if="pet.color" class="meta-item color-item">{{ pet.color }}</text>
           </view>
           <view v-if="pet.vaccineList && pet.vaccineList.length" class="vaccine-hint">
-            <Icon name="vaccine" :size="12" color="#67C23A" />
-            <text class="vaccine-text">{{ pet.vaccineList.length }} 条疫苗记录</text>
+            <text class="vaccine-emoji">💉</text>
+            <text class="vaccine-text">已接种 {{ pet.vaccineList.length }} 针疫苗</text>
           </view>
         </view>
 
-        <!-- 右侧操作 -->
-        <view class="pet-actions" @click.stop>
-          <view class="action-btn edit" @click="goEdit(pet.id)">
-            <Icon name="edit" :size="14" color="#4A90D9" />
-          </view>
-          <view class="action-btn delete" @click="handleDelete(pet)">
-            <Icon name="trash" :size="14" color="#F56C6C" />
-          </view>
-          <view class="arrow-icon">
-            <Icon name="chevron_right" :size="18" color="#C0C4CC" />
-          </view>
+        <!-- 更多操作 -->
+        <view class="more-btn" @click.stop="handleMore(pet)">
+          <Icon name="more" :size="20" color="#8A8D9A" />
         </view>
+      </view>
+
+      <!-- 虚线添加卡片 -->
+      <view class="add-card" @click="goAdd">
+        <view class="add-icon">
+          <Icon name="plus" :size="26" color="#FF8C42" />
+        </view>
+        <text class="add-text">添加新宠物</text>
       </view>
     </view>
 
     <!-- 空状态 -->
-    <view class="empty-section" v-else>
-      <view class="empty-img-wrap">
-        <Icon name="pet" :size="80" color="#FFD4A8" />
+    <view class="empty-wrap" v-else>
+      <view class="empty-art">
+        <text class="empty-emoji">🐕‍🦺</text>
       </view>
-      <text class="empty-title">还没有添加宠物哦</text>
-      <text class="empty-desc">点击下方按钮，创建你的宠物档案</text>
-      <view class="empty-btn" @click="goAdd">
-        <Icon name="plus" :size="16" color="#fff" />
-        <text>添加第一只宠物</text>
+      <text class="empty-title">还没有宠物档案</text>
+      <text class="empty-desc">添加你的第一位毛孩子吧~</text>
+      <view class="empty-btn pet-press" @click="goAdd">
+        <Icon name="plus" :size="18" color="#fff" />
+        <text class="empty-btn-text">添加第一位毛孩子</text>
       </view>
-      <text class="empty-tip">或使用右侧按钮快速添加</text>
     </view>
 
     <!-- 底部安全区 -->
@@ -153,6 +157,24 @@ const goDetail = (id) => uni.navigateTo({ url: `/pages/pet/detail?id=${id}` });
 const goAdd = () => uni.navigateTo({ url: '/pages/pet/edit' });
 const goEdit = (id) => uni.navigateTo({ url: `/pages/pet/edit?id=${id}` });
 
+/** 根据品种推断动物 emoji（后端未下发类型字段时按品种关键字兜底） */
+const petEmoji = (pet) => {
+  const text = `${pet.breed || ''}${pet.name || ''}`;
+  if (/猫|布偶|英短|美短|暹罗|橘/.test(text)) return '🐱';
+  if (/狗|犬|柯基|金毛|泰迪|拉布拉多|边牧|柴犬/.test(text)) return '🐶';
+  if (/兔/.test(text)) return '🐰';
+  if (/仓鼠|鼠/.test(text)) return '🐹';
+  return '🐾';
+};
+
+/** 按宠物类别返回柔和渐变卡片类型 */
+const petClass = (pet) => {
+  const text = `${pet.breed || ''}${pet.name || ''}`;
+  if (/猫|布偶|英短|美短|暹罗|橘/.test(text)) return 'card-cat';
+  if (/狗|犬|柯基|金毛|泰迪|拉布拉多|边牧|柴犬/.test(text)) return 'card-dog';
+  return 'card-other';
+};
+
 const getAge = (birthday) => {
   if (!birthday) return '';
   const birth = new Date(birthday);
@@ -169,17 +191,27 @@ const getAge = (birthday) => {
   return ageMonths <= 0 ? '' : ageMonths + '个月';
 };
 
-const handleDelete = async (pet) => {
-  const confirmed = await showConfirm(`确定要删除「${pet.name}」吗？删除后无法恢复。`);
-  if (!confirmed) return;
-  try {
-    await deletePet(pet.id);
-    showToast('删除成功', 'success');
-    petList.value = petList.value.filter((p) => p.id !== pet.id);
-    petStore.setPetList(petList.value);
-  } catch (err) {
-    // request.js 已统一处理 toast
-  }
+const handleMore = (pet) => {
+  uni.showActionSheet({
+    itemList: ['编辑档案', '删除宠物'],
+    itemColor: '#2D2D2D',
+    success: async (res) => {
+      if (res.tapIndex === 0) {
+        goEdit(pet.id);
+      } else if (res.tapIndex === 1) {
+        const confirmed = await showConfirm(`确定要删除「${pet.name}」吗？删除后无法恢复。`);
+        if (!confirmed) return;
+        try {
+          await deletePet(pet.id);
+          showToast('删除成功', 'success');
+          petList.value = petList.value.filter((p) => p.id !== pet.id);
+          petStore.setPetList(petList.value);
+        } catch (err) {
+          // request.js 已统一处理 toast
+        }
+      }
+    },
+  });
 };
 
 onMounted(() => fetchList());
@@ -187,346 +219,412 @@ onShow(() => fetchList());
 </script>
 
 <style lang="scss" scoped>
-.page-container {
+.pet-page {
   min-height: 100vh;
-  background-color: #F5F6FA;
+  background-color: $bg-page;
 }
 
 /* ========== 顶部渐变头部 ========== */
 .header-section {
   position: relative;
-  padding: 0 30rpx 30rpx;
   overflow: hidden;
-
-  /* ========== 自定义导航栏 ========== */
-  .custom-nav {
-    position: relative;
-    z-index: 2;
-
-    .nav-content {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16rpx 10rpx;
-    }
-
-    .nav-back {
-      position: absolute;
-      left: 16rpx;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 56rpx;
-      height: 56rpx;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      &:active {
-        opacity: 0.6;
-      }
-    }
-
-    .nav-bar-title {
-      font-size: 34rpx;
-      font-weight: 700;
-      color: #fff;
-    }
-  }
-
-  .header-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 320rpx;
-    background: linear-gradient(135deg, #FF934F 0%, #FF7E3D 60%, #FFC89E 100%);
-    border-radius: 0 0 40rpx 40rpx;
-  }
+  background: linear-gradient(160deg, #FFB26B 0%, #FF8C42 58%, #F06E2D 100%);
+  border-radius: 0 0 56rpx 56rpx;
+  padding-bottom: 34rpx;
 
   .header-decor {
     position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
+    opacity: 0.13;
+    font-size: 110rpx;
   }
 
-  .decor-1 {
-    width: 260rpx;
-    height: 260rpx;
-    top: -80rpx;
-    right: -60rpx;
+  .paw-1 {
+    top: 120rpx;
+    right: -16rpx;
+    transform: rotate(20deg);
   }
 
-  .decor-2 {
-    width: 140rpx;
-    height: 140rpx;
-    top: 180rpx;
-    right: 120rpx;
-    opacity: 0.6;
+  .paw-2 {
+    bottom: 8rpx;
+    left: -10rpx;
+    font-size: 90rpx;
+    transform: rotate(-12deg);
   }
+}
 
-  .header-content {
+.custom-nav {
+  position: relative;
+  z-index: 2;
+
+  .nav-content {
     position: relative;
-    z-index: 1;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 40rpx 10rpx 36rpx;
+    justify-content: center;
+    height: 88rpx;
+    padding: 4rpx 24rpx;
   }
 
-  .header-left {
+  .nav-back {
+    position: absolute;
+    left: 12rpx;
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      opacity: 0.65;
+    }
+  }
+
+  .nav-title {
+    font-size: $font-xl;
+    font-weight: $font-weight-bold;
+    color: $text-white;
+  }
+
+  .nav-add {
+    position: absolute;
+    right: 12rpx;
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      transform: scale(0.9);
+    }
+  }
+}
+
+.header-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 40rpx 8rpx;
+
+  .header-info {
     .header-title {
       display: block;
-      font-size: 40rpx;
-      font-weight: 700;
+      font-size: 44rpx;
+      font-weight: $font-weight-bold;
       color: #fff;
-      margin-bottom: 12rpx;
+      line-height: 1.4;
+      text-shadow: 0 4rpx 12rpx rgba(190, 70, 18, 0.22);
     }
 
-    .header-count-wrap {
-      display: flex;
-      align-items: center;
-      background-color: rgba(255, 255, 255, 0.25);
-      padding: 8rpx 20rpx;
-      border-radius: 30rpx;
-
-      .count-icon {
-        margin-right: 8rpx;
-      }
-    }
-
-    .header-count {
-      font-size: 24rpx;
-      color: #fff;
-    }
-
-    .header-subtitle {
-      font-size: 26rpx;
-      color: rgba(255, 255, 255, 0.85);
+    .header-sub {
+      display: block;
+      margin-top: 8rpx;
+      font-size: $font-sm;
+      color: rgba(255, 255, 255, 0.88);
     }
   }
 
-  .header-right {
-    .add-btn {
-      display: flex;
-      align-items: center;
-      background-color: rgba(255, 255, 255, 0.25);
-      border: 2rpx solid rgba(255, 255, 255, 0.4);
-      border-radius: 40rpx;
-      padding: 16rpx 28rpx;
-      backdrop-filter: blur(10rpx);
+  .header-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 110rpx;
+    height: 110rpx;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.24);
+    border: 2rpx dashed rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
 
-      .add-text {
-        font-size: 26rpx;
-        color: #fff;
-        margin-left: 8rpx;
-        font-weight: 500;
-      }
+    .count-num {
+      font-size: 40rpx;
+      font-weight: $font-weight-bold;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .count-unit {
+      margin-top: 4rpx;
+      font-size: $font-xs;
+      color: rgba(255, 255, 255, 0.9);
     }
   }
 }
 
 /* ========== 宠物列表 ========== */
 .pet-list {
-  padding: 0 24rpx;
+  padding: 28rpx 24rpx 0;
 }
 
-.pet-item {
+.pet-card {
+  position: relative;
   display: flex;
   align-items: center;
-  background-color: #fff;
-  border-radius: 24rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
+  padding: 28rpx 26rpx;
+  margin-bottom: 24rpx;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  animation: pet-slideIn 0.42s ease both;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 
   &:active {
-    transform: scale(0.98);
-  }
-}
-
-.pet-avatar-wrap {
-  position: relative;
-  margin-right: 24rpx;
-
-  .pet-avatar {
-    width: 140rpx;
-    height: 140rpx;
-    border-radius: 24rpx;
-    background-color: #F5F5F5;
+    transform: scale(0.975);
   }
 
-  .gender-badge {
+  /* 猫：浅橙 → 浅粉 */
+  &.card-cat {
+    background: linear-gradient(135deg, #FFF3E9 0%, #FFE3E9 100%);
+  }
+
+  /* 狗：浅蓝 → 浅紫 */
+  &.card-dog {
+    background: linear-gradient(135deg, #E9F3FF 0%, #ECE7FF 100%);
+  }
+
+  /* 其他：浅绿 → 浅黄 */
+  &.card-other {
+    background: linear-gradient(135deg, #EBF7EC 0%, #FFF7DD 100%);
+  }
+
+  .avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+    margin-right: 26rpx;
+
+    .pet-avatar {
+      width: 130rpx;
+      height: 130rpx;
+      border-radius: 50%;
+      background-color: #fff;
+      border: 4rpx solid rgba(255, 255, 255, 0.9);
+      box-shadow: $shadow-sm;
+    }
+
+    .type-badge {
+      position: absolute;
+      right: -6rpx;
+      bottom: -4rpx;
+      width: 52rpx;
+      height: 52rpx;
+      border-radius: 50%;
+      background: #fff;
+      border: 2rpx solid #fff;
+      box-shadow: $shadow-sm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      text {
+        font-size: 30rpx;
+        line-height: 1;
+      }
+    }
+  }
+
+  .pet-info {
+    flex: 1;
+    min-width: 0;
+
+    .name-row {
+      display: flex;
+      align-items: center;
+
+      .pet-name {
+        font-size: $font-xl;
+        color: $text-primary;
+        font-weight: $font-weight-bold;
+        @include pet-ellipsis;
+        max-width: 220rpx;
+      }
+
+      .sterilization-tag {
+        margin-left: 12rpx;
+        font-size: $font-xs;
+        color: $accent-green;
+        background: rgba(255, 255, 255, 0.75);
+        padding: 4rpx 16rpx;
+        border-radius: $radius-round;
+        flex-shrink: 0;
+      }
+    }
+
+    .breed-row {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+      margin-top: 12rpx;
+
+      .pet-breed {
+        font-size: $font-sm;
+        color: $primary-dark;
+        background: rgba(255, 255, 255, 0.78);
+        padding: 4rpx 18rpx;
+        border-radius: $radius-round;
+        @include pet-ellipsis;
+        max-width: 200rpx;
+      }
+
+      .gender-text {
+        font-size: $font-xs;
+        font-weight: $font-weight-medium;
+
+        &.male { color: $accent-blue; }
+        &.female { color: $accent-pink; }
+      }
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 20rpx;
+      margin-top: 12rpx;
+
+      .meta-item {
+        display: inline-flex;
+        align-items: center;
+        font-size: $font-xs;
+        color: $text-secondary;
+
+        .meta-emoji {
+          margin-right: 4rpx;
+          font-size: 22rpx;
+        }
+      }
+
+      .color-item {
+        padding: 2rpx 14rpx;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: $radius-round;
+      }
+    }
+
+    .vaccine-hint {
+      display: flex;
+      align-items: center;
+      margin-top: 12rpx;
+
+      .vaccine-emoji {
+        font-size: 22rpx;
+        margin-right: 6rpx;
+      }
+
+      .vaccine-text {
+        font-size: $font-xs;
+        color: $accent-green;
+        font-weight: $font-weight-medium;
+      }
+    }
+  }
+
+  .more-btn {
     position: absolute;
-    bottom: -8rpx;
-    right: -8rpx;
-    width: 40rpx;
-    height: 40rpx;
-    border-radius: 50%;
+    top: 16rpx;
+    right: 12rpx;
+    width: 56rpx;
+    height: 56rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22rpx;
-    font-weight: bold;
-    color: #fff;
+    border-radius: 50%;
 
-    &.male {
-      background: linear-gradient(135deg, #4A90D9, #6DB3F2);
-    }
-
-    &.female {
-      background: linear-gradient(135deg, #E8738A, #F4A4B4);
+    &:active {
+      background: rgba(255, 255, 255, 0.72);
+      transform: scale(0.9);
     }
   }
 }
 
-.pet-info {
-  flex: 1;
-  min-width: 0;
-
-  .pet-name-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 6rpx;
-  }
-
-  .pet-name {
-    font-size: 32rpx;
-    color: #303133;
-    font-weight: 700;
-    margin-right: 12rpx;
-  }
-
-  .sterilization-tag {
-    font-size: 20rpx;
-    color: #FF7E3D;
-    background-color: #FFF0E6;
-    padding: 2rpx 12rpx;
-    border-radius: 6rpx;
-  }
-
-  .pet-breed {
-    font-size: 26rpx;
-    color: #909399;
-    margin-bottom: 12rpx;
-    display: block;
-  }
-
-  .pet-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12rpx;
-    margin-bottom: 8rpx;
-  }
-
-  .pet-tag {
-    display: inline-flex;
-    align-items: center;
-    font-size: 20rpx;
-    color: #606266;
-    background-color: #F5F7FA;
-    padding: 4rpx 14rpx;
-    border-radius: 8rpx;
-  }
-
-  .vaccine-hint {
-    display: flex;
-    align-items: center;
-    margin-top: 4rpx;
-
-    .vaccine-text {
-      font-size: 22rpx;
-      color: #67C23A;
-      margin-left: 6rpx;
-    }
-  }
-}
-
-.pet-actions {
+/* ===== 添加宠物卡片 ===== */
+.add-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 16rpx;
-  margin-left: 12rpx;
+  justify-content: center;
+  gap: 14rpx;
+  padding: 34rpx 0;
+  margin-bottom: 24rpx;
+  border: 3rpx dashed rgba(255, 140, 66, 0.5);
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
 
-  .action-btn {
-    width: 48rpx;
-    height: 48rpx;
+  &:active {
+    transform: scale(0.97) rotate(-0.6deg);
+    background: #fff;
+  }
+
+  .add-icon {
+    width: 56rpx;
+    height: 56rpx;
     border-radius: 50%;
+    background: $primary-lighter;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #F5F7FA;
-
-    &.edit:active {
-      background-color: #E6F2FF;
-    }
-
-    &.delete:active {
-      background-color: #FFF0F0;
-    }
   }
 
-  .arrow-icon {
-    margin-top: 4rpx;
+  .add-text {
+    font-size: $font-md;
+    color: $primary;
+    font-weight: $font-weight-medium;
   }
 }
 
 /* ========== 空状态 ========== */
-.empty-section {
+.empty-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 100rpx 60rpx 0;
+  padding: 120rpx 60rpx 0;
 
-  .empty-img-wrap {
-    width: 160rpx;
-    height: 160rpx;
-    background: linear-gradient(135deg, #FFF0E6, #FFE4CC);
-    border-radius: 50%;
+  .empty-art {
+    width: 200rpx;
+    height: 200rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 32rpx;
+    border-radius: 50%;
+    background: $gradient-card;
+    box-shadow: $shadow-md;
+    animation: pet-float 3s ease-in-out infinite;
+
+    .empty-emoji {
+      font-size: 100rpx;
+    }
   }
 
   .empty-title {
-    font-size: 32rpx;
-    color: #303133;
-    font-weight: 600;
-    margin-bottom: 12rpx;
+    margin-top: 44rpx;
+    font-size: $font-xl;
+    color: $text-primary;
+    font-weight: $font-weight-bold;
   }
 
   .empty-desc {
-    font-size: 26rpx;
-    color: #909399;
-    margin-bottom: 40rpx;
+    margin-top: 14rpx;
+    font-size: $font-sm;
+    color: $text-hint;
   }
 
   .empty-btn {
     display: flex;
     align-items: center;
-    background: linear-gradient(135deg, #FF934F, #FF7E3D);
-    color: #fff;
-    font-size: 30rpx;
-    font-weight: 500;
-    padding: 24rpx 64rpx;
-    border-radius: 44rpx;
-    box-shadow: 0 8rpx 20rpx rgba(255, 126, 61, 0.3);
+    gap: 10rpx;
+    margin-top: 44rpx;
+    padding: 22rpx 60rpx;
+    border-radius: $radius-round;
+    background: $gradient-primary;
+    box-shadow: $shadow-primary;
 
-    text {
-      margin-left: 8rpx;
+    .empty-btn-text {
+      font-size: $font-md;
+      color: #fff;
+      font-weight: $font-weight-medium;
     }
-
-    &:active {
-      transform: scale(0.96);
-    }
-  }
-
-  .empty-tip {
-    font-size: 24rpx;
-    color: #C0C4CC;
-    margin-top: 20rpx;
   }
 }
 

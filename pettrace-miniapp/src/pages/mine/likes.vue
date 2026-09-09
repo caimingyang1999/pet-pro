@@ -146,7 +146,7 @@ onShow(() => {
 <style lang="scss" scoped>
 .likes-page {
   min-height: 100vh;
-  background-color: #F5F6FA;
+  background-color: #F8F9FC;
 }
 
 .list-scroll {

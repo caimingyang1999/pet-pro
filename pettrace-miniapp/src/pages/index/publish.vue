@@ -358,7 +358,7 @@ const handleSubmit = async () => {
     position: relative;
 
     &.active {
-      color: #FF7E3D;
+      color: #FF8C42;
       font-weight: 700;
 
       &::after {

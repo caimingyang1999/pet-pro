@@ -23,7 +23,7 @@
           @click="openSession(s)"
         >
           <view class="session-icon">
-            <Icon name="message" :size="18" color="#FF7E3D" />
+            <text>💬</text>
           </view>
           <view class="session-info">
             <text class="session-title">{{ s.sessionTitle || '未命名提问' }}</text>
@@ -40,13 +40,12 @@
       <!-- 空状态 -->
       <view v-else class="empty-section">
         <view class="empty-icon-wrap">
-          <Icon name="message" :size="64" color="#FFD4A8" />
+          <text class="empty-emoji">💬</text>
         </view>
         <text class="empty-title">还没有问答记录</text>
-        <text class="empty-desc">有养宠问题，随时来问</text>
+        <text class="empty-desc">有任何养宠问题，随时来问宠迹 AI 助手吧～</text>
         <view class="empty-btn" @click="goChat">
-          <Icon name="plus" :size="16" color="#fff" />
-          <text>开始提问</text>
+          <text class="empty-btn-text">开始提问 🐾</text>
         </view>
       </view>
 
@@ -64,7 +63,7 @@
           :class="msg.role"
         >
           <view class="msg-avatar" v-if="msg.role === 'assistant'">
-            <Icon name="message" :size="14" color="#fff" />
+            <text class="avatar-emoji">🤖</text>
           </view>
           <view class="bubble" :class="msg.role">
             <text class="bubble-text">{{ msg.content }}</text>
@@ -88,7 +87,7 @@
           <text>继续提问</text>
         </view>
         <view class="action-btn" @click="backToList">
-          <Icon name="chevron_left" :size="16" color="#FF7E3D" />
+          <Icon name="chevron_left" :size="16" color="#FF8C42" />
           <text>返回列表</text>
         </view>
       </view>
@@ -231,7 +230,7 @@ onShow(async () => {
 
 <style lang="scss" scoped>
 .history-page {
-  background-color: #F6F7FB;
+  background-color: $bg-page;
   min-height: 100vh;
 }
 
@@ -251,28 +250,32 @@ onShow(async () => {
 .session-item {
   display: flex;
   align-items: center;
-  background-color: #fff;
-  border-radius: 24rpx;
-  padding: 28rpx 24rpx;
+  background-color: $bg-card;
+  border-radius: $radius-lg;
+  padding: 26rpx 24rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  box-shadow: $shadow-card;
+  transition: transform 0.3s ease;
 
   &:active {
-    background-color: #FFF9F4;
-    transform: scale(0.99);
+    transform: scale(0.975);
   }
 }
 
 .session-icon {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 20rpx;
-  background-color: #FFF1E7;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 24rpx;
+  background: $gradient-primary-soft;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 20rpx;
+  margin-right: 22rpx;
   flex-shrink: 0;
+
+  text {
+    font-size: 36rpx;
+  }
 }
 
 .session-info {
@@ -282,9 +285,9 @@ onShow(async () => {
 
 .session-title {
   display: block;
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #3D2B1D;
+  font-size: $font-lg;
+  font-weight: $font-weight-bold;
+  color: $text-primary;
   margin-bottom: 8rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -296,13 +299,13 @@ onShow(async () => {
   align-items: center;
 
   .meta-text {
-    font-size: 22rpx;
-    color: #A8A8B0;
+    font-size: $font-xs;
+    color: $text-hint;
   }
 
   .meta-dot {
     margin: 0 8rpx;
-    color: #C0C4CC;
+    color: $text-placeholder;
   }
 }
 
@@ -314,42 +317,52 @@ onShow(async () => {
   padding: 120rpx 60rpx 0;
 
   .empty-icon-wrap {
-    width: 140rpx;
-    height: 140rpx;
-    background: linear-gradient(135deg, #FFF0E6, #FFE4CC);
+    width: 180rpx;
+    height: 180rpx;
+    background: $gradient-card;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 28rpx;
+    margin-bottom: 36rpx;
+    box-shadow: $shadow-md;
+    animation: pet-float 3.2s ease-in-out infinite;
+
+    .empty-emoji {
+      font-size: 80rpx;
+    }
   }
 
   .empty-title {
-    font-size: 32rpx;
-    color: #3D2B1D;
-    font-weight: 600;
-    margin-bottom: 12rpx;
+    font-size: $font-lg;
+    color: $text-primary;
+    font-weight: $font-weight-bold;
+    margin-bottom: 14rpx;
   }
 
   .empty-desc {
-    font-size: 26rpx;
-    color: #909399;
-    margin-bottom: 40rpx;
+    font-size: $font-sm;
+    color: $text-hint;
+    margin-bottom: 44rpx;
+    line-height: 1.6;
+    text-align: center;
   }
 
   .empty-btn {
     display: flex;
     align-items: center;
-    background: linear-gradient(135deg, #FF934F, #FF7E3D);
-    color: #fff;
-    font-size: 30rpx;
+    background: $gradient-primary;
     padding: 22rpx 56rpx;
-    border-radius: 44rpx;
-    box-shadow: 0 8rpx 20rpx rgba(255, 126, 61, 0.3);
-
-    text { margin-left: 8rpx; }
+    border-radius: $radius-round;
+    box-shadow: $shadow-primary;
 
     &:active { transform: scale(0.96); }
+
+    .empty-btn-text {
+      color: #fff;
+      font-size: $font-md;
+      font-weight: $font-weight-medium;
+    }
   }
 }
 
@@ -381,17 +394,23 @@ onShow(async () => {
 }
 
 .msg-avatar {
-  width: 56rpx;
-  height: 56rpx;
+  width: 64rpx;
+  height: 64rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FF934F, #FF7E3D);
+  background: $gradient-primary;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: $shadow-primary;
+  border: 3rpx solid #fff;
+
+  .avatar-emoji {
+    font-size: 32rpx;
+  }
 
   &.user-avatar {
-    background: linear-gradient(135deg, #9CA3AF, #6B7280);
+    background: linear-gradient(135deg, #A9B8D8 0%, #7E93B8 100%);
     margin-left: 14rpx; /* 与气泡的间距 */
   }
 
@@ -403,26 +422,28 @@ onShow(async () => {
 }
 
 .bubble {
-  max-width: 460rpx;
-  padding: 18rpx 22rpx;
-  border-radius: 22rpx;
-  font-size: 28rpx;
+  max-width: 500rpx;
+  padding: 20rpx 24rpx;
+  border-radius: $radius-lg;
+  font-size: $font-md;
   line-height: 1.6;
   word-break: break-all;
 
   &.assistant {
-    background-color: #fff;
-    color: #3D2B1D;
+    background-color: $bg-card;
+    color: $text-primary;
     margin-left: 14rpx;
-    border-bottom-left-radius: 6rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+    border-top-left-radius: $radius-sm;
+    box-shadow: $shadow-card;
+    border: 1rpx solid rgba(0, 0, 0, 0.04);
   }
 
   &.user {
-    background: linear-gradient(135deg, #FF934F, #FF7E3D);
+    background: $gradient-primary;
     color: #fff;
     margin-right: 0;
-    border-bottom-right-radius: 6rpx;
+    border-top-right-radius: $radius-sm;
+    box-shadow: $shadow-primary;
   }
 
   .bubble-text {
@@ -438,8 +459,9 @@ onShow(async () => {
   display: flex;
   gap: 20rpx;
   padding: 20rpx 24rpx calc(env(safe-area-inset-bottom) + 20rpx);
-  background-color: #fff;
-  border-top: 1rpx solid #F0F0F0;
+  background-color: $bg-card;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 -4rpx 20rpx rgba(52, 59, 76, 0.05);
 }
 
 .action-btn {
@@ -449,17 +471,17 @@ onShow(async () => {
   justify-content: center;
   gap: 8rpx;
   height: 80rpx;
-  border-radius: 40rpx;
-  font-size: 28rpx;
-  background-color: #FFF1E7;
-  color: #FF7E3D;
-  border: 2rpx solid #FFE0C7;
+  border-radius: $radius-round;
+  font-size: $font-md;
+  background: $primary-lighter;
+  color: $primary-dark;
+  border: 2rpx solid rgba(255, 140, 66, 0.28);
 
   &.primary {
-    background: linear-gradient(135deg, #FF934F, #FF7E3D);
+    background: $gradient-primary;
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 6rpx 16rpx rgba(255, 126, 61, 0.25);
+    box-shadow: $shadow-primary;
   }
 
   &:active { transform: scale(0.98); }

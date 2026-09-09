@@ -1,8 +1,7 @@
 <template>
-  <view class="product-card" @click="handleClick">
-    <!-- 左侧图片 -->
+  <view class="product-card pet-press" @click="handleClick">
+    <!-- 商品图片 -->
     <view class="image-wrapper">
-      <!-- 图片正常加载 -->
       <image
         v-if="imageSrc"
         class="product-image"
@@ -11,33 +10,40 @@
         lazy-load
         @error="onImageError"
       />
-      <!-- 无图 / 加载失败 兜底 -->
+      <!-- 无图 / 加载失败兜底 -->
       <view v-else class="image-placeholder">
-        <text class="placeholder-icon">📦</text>
+        <text class="placeholder-icon">🎁</text>
       </view>
 
-      <!-- 售罄蒙层 -->
-      <view v-if="product.stock === 0" class="sold-out-mask">
-        <text class="sold-out-text">售罄</text>
-      </view>
-
-      <!-- 热兑标签 -->
+      <!-- 热兑角标 -->
       <view v-if="product.stock > 0 && product.totalExchange >= 100" class="hot-tag">
-        <text class="hot-tag-text">热门</text>
+        <text class="hot-tag-text">🔥 热兑</text>
+      </view>
+
+      <!-- 库存状态 -->
+      <view v-if="product.stock === 0" class="stock-tag soldout">
+        <text class="stock-text">已兑罄</text>
+      </view>
+      <view v-else-if="product.stock <= 20" class="stock-tag">
+        <text class="stock-text">仅剩 {{ product.stock }} 件</text>
       </view>
     </view>
 
-    <!-- 右侧信息 -->
+    <!-- 商品信息 -->
     <view class="product-info">
-      <text v-if="product.categoryName" class="category-tag">{{ product.categoryName }}</text>
-      <text class="name">{{ product.productName }}</text>
-      <text v-if="product.description" class="desc">{{ plainDesc }}</text>
+      <text class="name pet-line2">{{ product.productName }}</text>
+      <view class="meta-row">
+        <text class="exchange-count">{{ formatExchange(product.totalExchange) }}人兑换</text>
+      </view>
       <view class="bottom-row">
         <view class="price">
+          <text class="coin">🪙</text>
           <text class="points">{{ product.pointsPrice }}</text>
           <text class="unit">积分</text>
         </view>
-        <text v-if="product.totalExchange" class="exchange-count">{{ formatExchange(product.totalExchange) }}人兑换</text>
+        <view class="exchange-btn">
+          <text class="btn-text">兑换</text>
+        </view>
       </view>
     </view>
   </view>
@@ -56,7 +62,7 @@ const props = defineProps({
 
 const emit = defineEmits(['click']);
 
-// 图片加载失败时切换到 false 显示占位
+// 图片加载失败时切换到占位图
 const imageError = ref(false);
 
 // 监听 product 变化重置错误态
@@ -69,19 +75,13 @@ watch(() => props.product?.id, () => {
  */
 const rawFirstImage = computed(() => {
   const images = props.product.productImages;
-  if (!images) {
-    console.log('[ProductCard] productImages 为空, productId:', props.product.id);
-    return '';
-  }
+  if (!images) return '';
   try {
     const parsed = typeof images === 'string' ? JSON.parse(images) : images;
-    // 可能是数组，也可能是单张图片字符串
     if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
     if (typeof parsed === 'string') return parsed;
-    console.log('[ProductCard] productImages 解析后无有效图片, productId:', props.product.id);
     return '';
   } catch {
-    // JSON.parse 失败说明是普通字符串，直接返回
     if (typeof images === 'string') return images;
     return '';
   }
@@ -93,7 +93,6 @@ const rawFirstImage = computed(() => {
 const imageSrc = computed(() => {
   if (!rawFirstImage.value) return '';
   if (imageError.value) return '';
-  // 已经是完整 URL 就直接用，否则用 fullImageUrl 补全
   if (rawFirstImage.value.startsWith('http://') || rawFirstImage.value.startsWith('https://')) {
     return rawFirstImage.value;
   }
@@ -101,20 +100,12 @@ const imageSrc = computed(() => {
 });
 
 /** 图片加载失败回调 */
-const onImageError = (e) => {
-  // eslint-disable-next-line no-console
-  console.warn('[ProductCard] 图片加载失败:', imageSrc.value, e?.detail);
+const onImageError = () => {
   imageError.value = true;
 };
 
-/** 纯文本描述（去 HTML） */
-const plainDesc = computed(() => {
-  const desc = props.product.description;
-  if (!desc) return '';
-  return String(desc).replace(/<[^>]+>/g, '').trim();
-});
-
 const formatExchange = (num) => {
+  if (!num) return '0';
   if (num >= 10000) return (num / 10000).toFixed(1) + '万';
   if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
   return String(num);
@@ -125,140 +116,146 @@ const handleClick = () => emit('click', props.product.id);
 
 <style lang="scss" scoped>
 .product-card {
-  display: flex;
   background-color: $pet-bg-white;
-  border-radius: 20rpx;
+  border-radius: $radius-md;
   overflow: hidden;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+  box-shadow: $shadow-card;
+  animation: pet-slideIn 0.4s ease both;
+  height: 100%;
+}
 
-  &:active {
-    transform: scale(0.98);
+.image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 326rpx;
+  overflow: hidden;
+  background-color: $bg-input;
+
+  .product-image {
+    width: 100%;
+    height: 100%;
+    transition: transform 0.45s ease;
   }
 
-  .image-wrapper {
-    position: relative;
-    flex-shrink: 0;
-    width: 240rpx;
-    height: 240rpx;
-    overflow: hidden;
-    background-color: #F5F5F5;
+  .image-placeholder {
+    width: 100%;
+    height: 100%;
+    @include pet-flex-center;
+    background: $gradient-card;
 
-    .product-image {
-      width: 100%;
-      height: 100%;
-    }
-
-    // 无图 / 加载失败占位
-    .image-placeholder {
-      width: 100%;
-      height: 100%;
-      @include pet-flex-center;
-      background-color: #F0F0F0;
-
-      .placeholder-icon {
-        font-size: 64rpx;
-      }
-    }
-
-    .sold-out-mask {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.4);
-      @include pet-flex-center;
-
-      .sold-out-text {
-        color: #fff;
-        font-size: 28rpx;
-        font-weight: 600;
-        letter-spacing: 4rpx;
-      }
-    }
-
-    .hot-tag {
-      position: absolute;
-      top: 16rpx;
-      left: 0;
-      background: linear-gradient(135deg, #FF6B6B, #FF8C42);
-      padding: 6rpx 20rpx 6rpx 16rpx;
-      border-radius: 0 20rpx 20rpx 0;
-
-      .hot-tag-text {
-        color: #fff;
-        font-size: 20rpx;
-        font-weight: 600;
-      }
+    .placeholder-icon {
+      font-size: 72rpx;
     }
   }
 
-  .product-info {
-    flex: 1;
-    padding: 20rpx 24rpx;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
+  .hot-tag {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: $gradient-primary;
+    padding: 8rpx 18rpx;
+    border-radius: 0 0 20rpx 0;
 
-    .category-tag {
-      display: inline-block;
-      align-self: flex-start;
-      font-size: 20rpx;
-      color: $pet-primary;
-      background-color: $pet-primary-light;
-      padding: 4rpx 16rpx;
-      border-radius: 20rpx;
-      margin-bottom: 10rpx;
+    .hot-tag-text {
+      color: #fff;
+      font-size: $font-xs;
+      font-weight: $font-weight-medium;
+    }
+  }
+
+  .stock-tag {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 8rpx 18rpx;
+    background: rgba(255, 201, 77, 0.96);
+    border-radius: 0 0 0 20rpx;
+
+    .stock-text {
+      font-size: $font-xs;
+      color: #7A5200;
+      font-weight: $font-weight-medium;
     }
 
-    .name {
-      font-size: 30rpx;
-      color: $pet-text-main;
-      font-weight: 600;
-      line-height: 1.4;
-      @include pet-multi-ellipsis(2);
-    }
+    &.soldout {
+      background: rgba(45, 45, 45, 0.72);
 
-    .desc {
-      font-size: 24rpx;
+      .stock-text {
+        color: #fff;
+      }
+    }
+  }
+}
+
+.product-info {
+  padding: 18rpx 18rpx 22rpx;
+
+  .name {
+    font-size: $font-md;
+    color: $pet-text-main;
+    font-weight: $font-weight-medium;
+    line-height: 1.45;
+    min-height: 80rpx;
+  }
+
+  .meta-row {
+    margin-top: 8rpx;
+
+    .exchange-count {
+      font-size: $font-xs;
       color: $pet-text-secondary;
-      line-height: 1.5;
-      margin-top: 8rpx;
-      @include pet-multi-ellipsis(1);
+    }
+  }
+
+  .bottom-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14rpx;
+  }
+
+  .price {
+    display: flex;
+    align-items: baseline;
+    gap: 4rpx;
+    min-width: 0;
+
+    .coin {
+      font-size: $font-md;
+      align-self: center;
     }
 
-    .bottom-row {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-top: auto;
-
-      .price {
-        display: flex;
-        align-items: baseline;
-
-        .points {
-          font-size: 36rpx;
-          color: $pet-primary;
-          font-weight: 800;
-          line-height: 1;
-        }
-
-        .unit {
-          font-size: 22rpx;
-          color: $pet-text-secondary;
-          margin-left: 6rpx;
-        }
-      }
-
-      .exchange-count {
-        font-size: 22rpx;
-        color: $pet-text-placeholder;
-        white-space: nowrap;
-      }
+    .points {
+      font-size: $font-lg;
+      color: $pet-primary;
+      font-weight: $font-weight-bold;
+      line-height: 1;
     }
+
+    .unit {
+      font-size: $font-xs;
+      color: $pet-text-secondary;
+    }
+  }
+
+  .exchange-btn {
+    flex-shrink: 0;
+    padding: 10rpx 24rpx;
+    border-radius: $radius-round;
+    background: $gradient-primary;
+    box-shadow: 0 4rpx 12rpx rgba(255, 140, 66, 0.3);
+
+    .btn-text {
+      font-size: $font-xs;
+      color: #fff;
+      font-weight: $font-weight-medium;
+    }
+  }
+}
+
+.product-card:active {
+  .product-image {
+    transform: scale(1.05);
   }
 }
 </style>

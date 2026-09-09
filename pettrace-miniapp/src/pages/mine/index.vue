@@ -1,13 +1,9 @@
 <template>
   <view class="mine-page">
-    <!-- 自定义导航栏（固定顶部） -->
+    <!-- ========== 渐变吸顶导航 ========== -->
     <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="nav-content">
-        <view class="nav-left" />
-        <view class="nav-center">
-          <text class="nav-title">我的</text>
-        </view>
-        <view class="nav-right" />
+        <text class="nav-title">我的</text>
       </view>
     </view>
 
@@ -19,26 +15,35 @@
       refresher-enabled
       :refresher-triggered="refreshing"
       @refresherrefresh="onRefresh"
-      @scrolltolower="() => {}"
     >
       <!-- 顶部占位：避开状态栏 + 导航栏 -->
       <view :style="{ height: navBarHeight + 'px' }" />
 
-      <!-- 1. 顶部用户卡片 -->
+      <!-- 用户信息卡 -->
       <view class="user-card-wrap">
         <view class="user-card-bg" />
-        <!-- 签到按钮（右上角） -->
-        <view
-          class="sign-in-btn"
-          :class="{ 'signed': hasSigned, 'loading': signInLoading }"
-          @click="handleSignIn"
-        >
-          <text v-if="hasSigned">已签到</text>
-          <text v-else-if="signInLoading">签到中...</text>
-          <text v-else>签到 +5</text>
+        <text class="watermark-paw">🐾</text>
+        <text class="deco-heart">🦴</text>
+
+        <!-- 卡顶：签到 + 设置 -->
+        <view class="card-top-row">
+          <view
+            class="sign-chip"
+            :class="{ signed: hasSigned, loading: signInLoading }"
+            @click="handleSignIn"
+          >
+            <text class="sign-emoji">📅</text>
+            <text v-if="hasSigned">今日已签到</text>
+            <text v-else-if="signInLoading">签到中...</text>
+            <text v-else>每日签到 +5</text>
+          </view>
+          <view class="settings-btn pet-press" @click="handleMenuClick(settingItem)">
+            <Icon name="settings" :size="20" color="rgba(255,255,255,0.95)" />
+          </view>
         </view>
-        <view class="user-info">
-          <!-- 头像 -->
+
+        <!-- 用户信息主体 -->
+        <view class="user-main">
           <view class="avatar-box" @click="changeAvatar">
             <image
               v-if="userInfo?.avatar"
@@ -47,21 +52,26 @@
               mode="aspectFill"
             />
             <view v-else class="avatar avatar-placeholder">
-              <Icon name="user" :size="30" color="#fff" />
+              <text class="avatar-emoji">🐾</text>
             </view>
             <view class="avatar-edit">
-              <Icon name="camera" :size="12" color="#FF7E3D" />
+              <Icon name="camera" :size="12" color="#FF8C42" />
             </view>
           </view>
 
-          <!-- 用户信息 -->
           <view class="user-meta">
-            <text class="nickname">{{ userInfo?.nickName || '未设置昵称' }}</text>
-            <view class="id-row">
+            <view class="nickname-line">
+              <text class="nickname">{{ userInfo?.nickName || '爱宠主人' }}</text>
+              <view class="points-pill" @click="goPointsDetail">
+                <text class="points-coin">🪙</text>
+                <text class="points-num">{{ userInfo?.points || 0 }}</text>
+              </view>
+            </view>
+            <view class="id-line">
               <text class="id-label">ID: {{ userInfo?.userId || '--' }}</text>
             </view>
 
-            <!-- 积分 + 快捷入口 -->
+            <!-- 数据统计 -->
             <view class="stats-row">
               <view class="stat-item" @click="goPointsDetail">
                 <text class="stat-value">{{ userInfo?.points || 0 }}</text>
@@ -84,26 +94,31 @@
               </view>
             </view>
             <view class="sub-stats-row">
-              <text class="sub-stat" @click="goFollows('follower')">粉丝 {{ followerCount }}</text>
+              <text class="sub-stat" @click="goFollows('follower')">
+                粉丝 {{ followerCount }} · 点击查看
+              </text>
             </view>
           </view>
         </view>
       </view>
 
-      <!-- 2. 功能菜单列表 -->
-      <view class="menu-card">
+      <!-- 功能菜单（与顶部卡片重叠） -->
+      <view class="menu-card overlap-card">
         <view
-            class="menu-item"
-            v-for="item in serviceMenu"
-            :key="item.key"
-            @click="handleMenuClick(item)"
-          >
-            <text class="menu-title">{{ item.title }}</text>
-            <Icon name="chevron_right" :size="16" color="#C0C4CC" />
+          class="menu-item"
+          v-for="item in visibleServiceMenu"
+          :key="item.key"
+          @click="handleMenuClick(item)"
+        >
+          <view class="menu-icon" :style="{ background: menuMeta(item).bg }">
+            <text>{{ menuMeta(item).emoji }}</text>
           </view>
+          <text class="menu-title">{{ item.title }}</text>
+          <Icon name="chevron_right" :size="16" color="#C0C2CE" />
+        </view>
       </view>
 
-      <!-- 3. 其他菜单列表 -->
+      <!-- 其他菜单 -->
       <view class="menu-card">
         <view
           class="menu-item"
@@ -111,55 +126,65 @@
           :key="item.key"
           @click="handleMenuClick(item)"
         >
+          <view class="menu-icon" :style="{ background: menuMeta(item).bg }">
+            <text>{{ menuMeta(item).emoji }}</text>
+          </view>
           <text class="menu-title">{{ item.title }}</text>
           <text class="menu-desc" v-if="item.desc">{{ item.desc }}</text>
-          <Icon name="chevron_right" :size="16" color="#C0C4CC" />
+          <Icon name="chevron_right" :size="16" color="#C0C2CE" />
         </view>
       </view>
 
-      <!-- 4. 退出登录 -->
+      <!-- 退出登录 -->
       <view class="logout-wrap">
-        <view class="logout-btn" @click="handleLogout">
+        <view class="logout-btn pet-press" @click="handleLogout">
+          <Icon name="logout" :size="18" color="#FF6B6B" />
           <text>退出登录</text>
         </view>
       </view>
 
-      <view class="footer-tips">宠迹 · 陪伴每一段美好时光</view>
+      <view class="footer-tips">宠迹 · 记录毛孩子的每一个瞬间 🐾</view>
     </scroll-view>
 
     <!-- ========== 未登录状态 ========== -->
     <view v-else class="login-guide-page">
-      <!-- 顶部占位 -->
       <view :style="{ height: navBarHeight + 'px' }" />
-      <view class="guide-content">
-        <view class="guide-logo-wrap">
-          <view class="guide-logo-ring">
-            <image class="guide-logo-img" src="/static/log2.png" mode="aspectFit" />
+
+      <view class="guide-logo-wrap">
+        <view class="guide-logo-ring">
+          <text class="guide-logo-emoji">🐾</text>
+        </view>
+        <view class="guide-float-paw paw-a">🐾</view>
+        <view class="guide-float-paw paw-b">🐾</view>
+      </view>
+
+      <text class="guide-title">宠迹</text>
+      <text class="guide-desc">记录毛孩子的每一个瞬间 🐾</text>
+
+      <view class="login-buttons">
+        <button
+          class="wx-login-btn pet-press"
+          open-type="getPhoneNumber"
+          @getphonenumber="handleWxPhoneLogin"
+        >
+          <view class="wx-icon-wrap">
+            <Icon name="weixin" :size="18" color="#fff" />
           </view>
+          <text>微信手机号登录</text>
+        </button>
+
+        <view class="account-login-btn pet-press" @click="goToLogin">
+          <text>账号密码登录</text>
         </view>
 
-        <text class="guide-title">宠迹</text>
-        <text class="guide-desc">记录宠物生活，分享美好时光</text>
+        <view class="register-divider">
+          <view class="divider-line" />
+          <text class="divider-text">还没有账号？</text>
+          <view class="divider-line" />
+        </view>
 
-        <view class="login-buttons">
-          <button
-            class="wx-login-btn"
-            open-type="getPhoneNumber"
-            @getphonenumber="handleWxPhoneLogin"
-          >
-            <view class="wx-icon-wrap">
-              <Icon name="weixin" :size="18" color="#fff" />
-            </view>
-            <text>微信手机号登录</text>
-          </button>
-
-          <view class="account-login-btn" @click="goToLogin">
-            <text>账号密码登录</text>
-          </view>
-
-          <view class="register-link" @click="goToRegister">
-            <text>注册新账号</text>
-          </view>
+        <view class="register-link pet-press" @click="goToRegister">
+          <text>注册新账号</text>
         </view>
       </view>
 
@@ -227,7 +252,24 @@ const otherMenuList = reactive([
   { key: 'setting', title: '设置', path: '', needLogin: false },
 ]);
 
-// 养宠顾问功能关闭时，隐藏"问答记录"入口
+const settingItem = { key: 'setting', title: '设置', path: '', needLogin: false };
+
+/** 菜单图标元数据：不同菜单不同色彩的柔和底 + emoji */
+const MENU_META = {
+  pets: { emoji: '🐾', bg: '#FFF0E6' },
+  chats: { emoji: '💬', bg: '#F0EBFF' },
+  posts: { emoji: '📝', bg: '#FFF3E0' },
+  likes: { emoji: '❤️', bg: '#FFEBF0' },
+  follows: { emoji: '👥', bg: '#E8F3FF' },
+  orders: { emoji: '📦', bg: '#E5F4FF' },
+  address: { emoji: '📍', bg: '#E8F7EB' },
+  about: { emoji: '💡', bg: '#FFF7DE' },
+  setting: { emoji: '⚙️', bg: '#F0F1F5' },
+};
+
+const menuMeta = (item) => MENU_META[item.key] || { emoji: '✨', bg: '#F0F1F5' };
+
+// 养宠助手功能关闭时，隐藏"问答记录"入口
 const visibleServiceMenu = computed(() =>
   serviceMenu.filter((item) => item.key !== 'chats' || features.adviserEnabled !== false)
 );
@@ -328,12 +370,12 @@ const handleWxPhoneLogin = async (e) => {
   console.log('[getPhoneNumber返回]', detail);
   const errMsg = detail.errMsg || '';
 
-  // 授权未成功：区分“用户取消”和“接口/权限错误”，避免误导
+  // 授权未成功：区分"用户取消"和"接口/权限错误"，避免误导
   if (!errMsg.includes('ok')) {
     if (/cancel|deny|denied|用户取消|拒绝/i.test(errMsg)) {
       showToast('已取消授权');
     } else if (detail.errno === 102 || /jsapi has no permission|no permission/i.test(errMsg)) {
-      showToast('当前小程序未开通“获取手机号”权限：个人主体或未认证的小程序不支持，请使用已认证的企业主体 AppID');
+      showToast('当前小程序未开通"获取手机号"权限：个人主体或未认证的小程序不支持，请使用已认证的企业主体 AppID');
     } else {
       showToast(`授权失败：${errMsg}`);
     }
@@ -342,7 +384,7 @@ const handleWxPhoneLogin = async (e) => {
 
   const phoneCode = detail.code;
   if (!phoneCode) {
-    showToast('获取手机号失败，请确认小程序已开通“获取手机号”权限');
+    showToast('获取手机号失败，请确认小程序已开通"获取手机号"权限');
     return;
   }
   try {
@@ -407,6 +449,10 @@ const changeAvatar = () => {
 const goPointsDetail = () => uni.navigateTo({ url: '/pages/mine/points' });
 const goOrders = () => uni.navigateTo({ url: '/pages/mine/orders' });
 const goPosts = () => uni.navigateTo({ url: '/pages/mine/posts' });
+const goFollows = (type) => {
+  const url = type === 'follower' ? '/pages/mine/follows?type=follower' : '/pages/mine/follows';
+  uni.navigateTo({ url });
+};
 
 const handleMenuClick = (item) => {
   if (item.needLogin && !isLogin.value) {
@@ -426,9 +472,9 @@ const handleMenuClick = (item) => {
 
 const handleLogout = () => {
   uni.showModal({
-    title: '提示',
-    content: '确认退出登录？',
-    confirmColor: '#FF7E3D',
+    title: '退出登录',
+    content: '确认退出登录吗？宠物档案和动态不会丢失哦~',
+    confirmColor: '#FF6B6B',
     success: (res) => {
       if (res.confirm) {
         userStore.logout();
@@ -442,40 +488,32 @@ const handleLogout = () => {
 <style lang="scss" scoped>
 .mine-page {
   min-height: 100vh;
-  background-color: #F6F7FB;
+  background-color: $bg-page;
 }
 
-/* ========== 自定义导航栏 ========== */
+/* ========== 渐变吸顶导航 ========== */
 .custom-nav {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 999;
-  background-color: #F6F7FB;
+  background: $gradient-primary;
+  box-shadow: 0 4rpx 16rpx rgba(216, 75, 16, 0.12);
 
   .nav-content {
     display: flex;
     align-items: center;
+    justify-content: center;
     height: 88rpx;
-    padding: 0 24rpx;
-  }
 
-  .nav-left,
-  .nav-right {
-    width: 120rpx;
-    flex-shrink: 0;
-  }
-
-  .nav-center {
-    flex: 1;
-    text-align: center;
-  }
-
-  .nav-title {
-    font-size: 34rpx;
-    font-weight: 700;
-    color: #1A1A1A;
+    .nav-title {
+      font-size: $font-lg;
+      font-weight: $font-weight-bold;
+      color: #fff;
+      letter-spacing: 2rpx;
+      text-shadow: 0 2rpx 8rpx rgba(185, 61, 9, 0.18);
+    }
   }
 }
 
@@ -483,43 +521,75 @@ const handleLogout = () => {
   height: 100vh;
 }
 
-/* ========== 用户卡片 ========== */
+/* ========== 已登录：用户信息卡 ========== */
 .user-card-wrap {
   position: relative;
-  margin: 8rpx 32rpx 0;
+  margin: 8rpx 28rpx 0;
   overflow: hidden;
-  border-radius: 32rpx;
-  box-shadow: 0 8rpx 32rpx rgba(255, 126, 61, 0.10);
+  border-radius: $radius-xl;
+  box-shadow: $shadow-primary;
 
   .user-card-bg {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    background: linear-gradient(135deg, #FFFFFF 0%, #FFF7F0 100%);
-    z-index: 0;
+    inset: 0;
+    background: $gradient-primary;
   }
 
-  /* 签到按钮 */
-  .sign-in-btn {
+  .watermark-paw {
     position: absolute;
-    top: 24rpx;
-    right: 24rpx;
-    z-index: 3;
-    padding: 12rpx 24rpx;
-    border-radius: 32rpx;
-    background: linear-gradient(135deg, #FF7E3D 0%, #FF5722 100%);
-    color: #fff;
-    font-size: 24rpx;
-    font-weight: 600;
-    box-shadow: 0 4rpx 12rpx rgba(255, 126, 61, 0.35);
-    transition: opacity 0.2s;
+    right: -12rpx;
+    bottom: -54rpx;
+    font-size: 250rpx;
+    opacity: 0.1;
+    transform: rotate(-14deg);
+    z-index: 1;
+  }
+
+  .deco-heart {
+    position: absolute;
+    top: 150rpx;
+    right: 150rpx;
+    font-size: 60rpx;
+    opacity: 0.14;
+    transform: rotate(18deg);
+  }
+}
+
+.card-top-row {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 24rpx 0;
+
+  .sign-chip {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 10rpx 26rpx;
+    border-radius: $radius-round;
+    background: rgba(255, 255, 255, 0.24);
+    border: 1rpx solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(8rpx);
+    -webkit-backdrop-filter: blur(8rpx);
+
+    .sign-emoji {
+      font-size: $font-md;
+    }
+
+    text {
+      font-size: $font-sm;
+      color: #fff;
+      font-weight: $font-weight-medium;
+    }
 
     &.signed {
-      background: #E0E0E0;
-      color: #999;
-      box-shadow: none;
+      background: rgba(255, 255, 255, 0.18);
+
+      text {
+        color: rgba(255, 255, 255, 0.88);
+      }
     }
 
     &.loading {
@@ -527,261 +597,348 @@ const handleLogout = () => {
     }
 
     &:active:not(.signed) {
-      opacity: 0.85;
+      transform: scale(0.95);
     }
+  }
+
+  .settings-btn {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    border: 1rpx solid rgba(255, 255, 255, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
-.user-info {
+.user-main {
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: flex-start;
-  padding: 40rpx 32rpx 36rpx;
+  align-items: center;
+  padding: 24rpx 32rpx 36rpx;
 }
 
 .avatar-box {
   position: relative;
-  margin-right: 28rpx;
+  margin-right: 30rpx;
   flex-shrink: 0;
 
   .avatar {
-    width: 128rpx;
-    height: 128rpx;
+    width: 148rpx;
+    height: 148rpx;
     border-radius: 50%;
-    border: 4rpx solid #FFF0E6;
-    box-shadow: 0 8rpx 24rpx rgba(255, 126, 61, 0.14);
-    background-color: #F6F7FB;
+    border: 5rpx solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8rpx 24rpx rgba(190, 70, 18, 0.28);
+    background-color: #fff;
   }
 
   .avatar-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #FFB27A 0%, #FF7E3D 100%);
+    background: rgba(255, 255, 255, 0.3);
+
+    .avatar-emoji {
+      font-size: 68rpx;
+    }
   }
 
   .avatar-edit {
     position: absolute;
-    right: -4rpx;
-    bottom: -4rpx;
-    width: 44rpx;
-    height: 44rpx;
-    background: #FFFFFF;
+    right: -2rpx;
+    bottom: -2rpx;
+    width: 48rpx;
+    height: 48rpx;
+    background: #fff;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2rpx solid #FFD9B8;
-    box-shadow: 0 4rpx 12rpx rgba(255, 126, 61, 0.18);
+    box-shadow: $shadow-sm;
   }
 }
 
 .user-meta {
   flex: 1;
   min-width: 0;
-  padding-top: 16rpx;
-}
 
-.nickname {
-  font-size: 38rpx;
-  font-weight: 700;
-  color: #3D2B1D;
-  line-height: 1.3;
-  max-width: 380rpx;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.id-row {
-  margin-top: 10rpx;
-
-  .id-label {
-    font-size: 24rpx;
-    color: #A8A8B0;
-  }
-}
-
-.stats-row {
-  display: flex;
-  align-items: center;
-  background-color: #FFFFFF;
-  border: 2rpx solid #FFE8D6;
-  border-radius: 24rpx;
-  padding: 24rpx 0;
-  margin-top: 28rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255, 126, 61, 0.06);
-
-  .stat-item {
-    flex: 1;
+  .nickname-line {
     display: flex;
-    flex-direction: column;
     align-items: center;
 
-    .stat-value {
-      font-size: 34rpx;
-      font-weight: 700;
-      color: #FF7E3D;
-      line-height: 1.2;
+    .nickname {
+      font-size: 42rpx;
+      font-weight: $font-weight-bold;
+      color: #fff;
+      line-height: 1.3;
+      text-shadow: 0 2rpx 10rpx rgba(185, 61, 9, 0.2);
+      max-width: 220rpx;
+      @include pet-ellipsis;
     }
 
-    .stat-label {
-      font-size: 22rpx;
-      color: #9B9BA5;
-      margin-top: 4rpx;
+    .points-pill {
+      display: flex;
+      align-items: center;
+      gap: 4rpx;
+      margin-left: 16rpx;
+      padding: 6rpx 18rpx;
+      border-radius: $radius-round;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4rpx 12rpx rgba(185, 61, 9, 0.18);
+      flex-shrink: 0;
+
+      &:active {
+        animation: pet-bounce 0.55s ease;
+      }
+
+      .points-coin {
+        font-size: $font-sm;
+      }
+
+      .points-num {
+        font-size: $font-md;
+        color: $primary-dark;
+        font-weight: $font-weight-bold;
+      }
     }
   }
 
-  .stat-divider {
-    width: 1rpx;
-    height: 44rpx;
-    background-color: #FFE8D6;
+  .id-line {
+    margin-top: 8rpx;
+
+    .id-label {
+      font-size: $font-xs;
+      color: rgba(255, 255, 255, 0.75);
+    }
+  }
+
+  .stats-row {
+    display: flex;
+    align-items: center;
+    margin-top: 22rpx;
+    padding: 20rpx 6rpx;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1rpx solid rgba(255, 255, 255, 0.24);
+    border-radius: $radius-md;
+    backdrop-filter: blur(10rpx);
+    -webkit-backdrop-filter: blur(10rpx);
+
+    .stat-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      &:active {
+        transform: scale(0.94);
+      }
+
+      .stat-value {
+        font-size: 36rpx;
+        font-weight: $font-weight-bold;
+        color: #fff;
+        line-height: 1.2;
+      }
+
+      .stat-label {
+        margin-top: 4rpx;
+        font-size: $font-xs;
+        color: rgba(255, 255, 255, 0.82);
+      }
+    }
+
+    .stat-divider {
+      width: 1rpx;
+      height: 40rpx;
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+
+  .sub-stats-row {
+    margin-top: 10rpx;
+
+    .sub-stat {
+      font-size: $font-xs;
+      color: rgba(255, 255, 255, 0.72);
+    }
   }
 }
 
-.sub-stats-row {
-  margin-top: 12rpx;
-  padding-left: 8rpx;
-
-  .sub-stat {
-    font-size: 24rpx;
-    color: #A8A8B0;
-
-    &:active {
-      color: #FF7E3D;
-    }
-  }
-}
-
-/* ========== 菜单列表 ========== */
+/* ========== 功能菜单卡片（负 margin 与用户卡重叠） ========== */
 .menu-card {
-  margin: 24rpx 32rpx 0;
-  background-color: #fff;
-  border-radius: 28rpx;
+  margin: 0 28rpx;
   padding: 0 28rpx;
-  box-shadow: 0 8rpx 28rpx rgba(150, 90, 40, 0.06);
+  background: #fff;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  overflow: hidden;
+}
+
+.overlap-card {
+  margin-top: -28rpx;
+  position: relative;
+  z-index: 5;
+  padding-top: 28rpx;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  min-height: 108rpx;
-  padding: 4rpx 0;
-  border-bottom: 1rpx solid #F4F3F8;
+  min-height: 104rpx;
+  border-bottom: 1rpx solid $bg-input;
+  transition: transform 0.25s ease;
 
   &:last-child {
     border-bottom: none;
   }
 
   &:active {
-    background-color: #FFF9F4;
+    background: #FFF9F4;
+    transform: translateX(6rpx);
+  }
+
+  .menu-icon {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 20rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 22rpx;
+    flex-shrink: 0;
+
+    text {
+      font-size: 32rpx;
+    }
+  }
+
+  .menu-title {
+    flex: 1;
+    font-size: $font-md;
+    color: $text-primary;
+    font-weight: $font-weight-medium;
+  }
+
+  .menu-desc {
+    font-size: $font-xs;
+    color: $text-hint;
+    margin-right: 12rpx;
   }
 }
 
-.menu-title {
-  flex: 1;
-  font-size: 29rpx;
-  color: #3D2B1D;
-  font-weight: 500;
-}
-
-.menu-desc {
-  font-size: 24rpx;
-  color: #A8A8B0;
-  margin-right: 12rpx;
+.menu-card + .menu-card {
+  margin-top: 24rpx;
 }
 
 /* ========== 退出登录 ========== */
 .logout-wrap {
-  padding: 40rpx 32rpx 24rpx;
+  padding: 40rpx 28rpx 24rpx;
 }
 
 .logout-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #fff;
-  color: #FF7E3D;
-  font-size: 30rpx;
-  text-align: center;
-  padding: 30rpx 0;
-  border-radius: 28rpx;
-  font-weight: 600;
   gap: 12rpx;
-  border: 2rpx solid #FFE8D6;
-  box-shadow: 0 8rpx 28rpx rgba(150, 90, 40, 0.05);
+  background: #fff;
+  color: $danger;
+  font-size: $font-md;
+  padding: 28rpx 0;
+  border-radius: $radius-round;
+  font-weight: $font-weight-medium;
+  box-shadow: $shadow-sm;
+
+  text {
+    color: $danger;
+  }
 
   &:active {
-    background-color: #FFF7F0;
+    background: #FFF0F0;
   }
 }
 
 .footer-tips {
   text-align: center;
-  color: #B8B8C2;
-  font-size: 22rpx;
-  padding: 16rpx 0 48rpx;
+  color: $text-placeholder;
+  font-size: $font-xs;
+  padding: 8rpx 0 52rpx;
 }
 
 /* ========== 未登录状态 ========== */
 .login-guide-page {
   min-height: 100vh;
-  background-color: #F6F7FB;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #FFE8D6 0%, #F8F9FC 46%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 160rpx 64rpx 60rpx;
-}
-
-.guide-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
+  padding: 0 64rpx 60rpx;
 }
 
 .guide-logo-wrap {
-  width: 220rpx;
-  height: 220rpx;
-  background: linear-gradient(150deg, #FFF0E6 0%, #FFE0C7 100%);
-  border-radius: 50%;
+  position: relative;
+  width: 240rpx;
+  height: 240rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 16rpx 40rpx rgba(255, 126, 61, 0.12);
-  margin-bottom: 36rpx;
-}
-
-.guide-logo-ring {
-  width: 152rpx;
-  height: 152rpx;
   border-radius: 50%;
-  background: linear-gradient(150deg, #FFB27A 0%, #FF7E3D 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 -6rpx 16rpx rgba(230, 106, 26, 0.25), 0 8rpx 20rpx rgba(255, 140, 66, 0.35);
-}
+  margin-top: 40rpx;
+  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.95) 0%, rgba(255,232,214,0.6) 100%);
+  box-shadow: 0 16rpx 48rpx rgba(255, 140, 66, 0.16);
 
-.guide-logo-img {
-  width: 104rpx;
-  height: 104rpx;
+  .guide-logo-ring {
+    width: 170rpx;
+    height: 170rpx;
+    border-radius: 50%;
+    background: $gradient-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 -8rpx 18rpx rgba(202, 78, 19, 0.24), $shadow-primary;
+
+    .guide-logo-emoji {
+      font-size: 86rpx;
+      filter: drop-shadow(0 4rpx 6rpx rgba(183, 59, 8, 0.2));
+    }
+  }
+
+  .guide-float-paw {
+    position: absolute;
+    font-size: 44rpx;
+    opacity: 0.55;
+  }
+
+  .paw-a {
+    top: 4rpx;
+    right: 2rpx;
+    transform: rotate(18deg);
+    animation: pet-float 3s ease-in-out infinite;
+  }
+
+  .paw-b {
+    bottom: 14rpx;
+    left: 0;
+    transform: rotate(-20deg);
+    animation: pet-float 3.6s ease-in-out 0.4s infinite;
+  }
 }
 
 .guide-title {
-  font-size: 52rpx;
-  font-weight: 700;
-  color: #FF7E3D;
-  letter-spacing: 8rpx;
-  margin-bottom: 16rpx;
+  margin-top: 40rpx;
+  font-size: 64rpx;
+  font-weight: $font-weight-bold;
+  color: $primary-dark;
+  letter-spacing: 10rpx;
 }
 
 .guide-desc {
-  font-size: 28rpx;
-  color: #A8A8B0;
-  margin-bottom: 96rpx;
+  margin-top: 18rpx;
+  font-size: $font-md;
+  color: $text-secondary;
 }
 
 .login-buttons {
@@ -789,21 +946,22 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28rpx;
+  margin-top: 100rpx;
+  gap: 26rpx;
 }
 
 .wx-login-btn {
   width: 100%;
   height: 96rpx;
-  background: linear-gradient(135deg, #FF934F 0%, #FF7E3D 55%, #F4672A 100%);
+  background: $gradient-primary;
   color: #fff;
-  border-radius: 48rpx;
+  border-radius: $radius-round;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  font-weight: 600;
-  box-shadow: 0 12rpx 28rpx rgba(255, 126, 61, 0.32);
+  font-size: $font-lg;
+  font-weight: $font-weight-bold;
+  box-shadow: $shadow-primary;
   border: none;
   padding: 0;
   line-height: 96rpx;
@@ -813,14 +971,14 @@ const handleLogout = () => {
   }
 
   &:active {
-    transform: scale(0.97);
+    transform: scale(0.96) translateY(2rpx);
   }
 
   .wx-icon-wrap {
     width: 48rpx;
     height: 48rpx;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.24);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -831,47 +989,67 @@ const handleLogout = () => {
 .account-login-btn {
   width: 100%;
   height: 96rpx;
-  border: 2rpx solid #FFD9B8;
-  color: #FF7E3D;
-  border-radius: 48rpx;
+  border: 2rpx solid rgba(255, 140, 66, 0.45);
+  color: $primary-dark;
+  border-radius: $radius-round;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  font-weight: 500;
-  background: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(255, 126, 61, 0.06);
-  transition: all 0.2s;
+  font-size: $font-lg;
+  font-weight: $font-weight-medium;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: $shadow-sm;
 
   &:active {
-    transform: scale(0.97);
-    background: #FFF7F0;
+    transform: scale(0.97) translateY(2rpx);
+  }
+}
+
+.register-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 20rpx;
+  margin-top: 12rpx;
+
+  .divider-line {
+    flex: 1;
+    height: 1rpx;
+    background: rgba(160, 160, 160, 0.32);
+  }
+
+  .divider-text {
+    font-size: $font-xs;
+    color: $text-hint;
   }
 }
 
 .register-link {
-  margin-top: 12rpx;
-  padding: 16rpx;
+  padding: 12rpx 40rpx;
+  border-radius: $radius-round;
 
   text {
-    font-size: 28rpx;
-    color: #FF8A4D;
-    font-weight: 500;
+    font-size: $font-md;
+    color: $primary-dark;
+    font-weight: $font-weight-medium;
   }
 
   &:active {
-    opacity: 0.7;
+    background: rgba(255, 140, 66, 0.1);
   }
 }
 
 .agreement-tips {
+  margin-top: auto;
   text-align: center;
-  font-size: 24rpx;
-  color: #A8A8B0;
-  line-height: 1.6;
+  font-size: $font-xs;
+  color: $text-hint;
+  line-height: 1.7;
+  padding-top: 30rpx;
 
   .link {
-    color: #FF7E3D;
+    color: $primary;
+    text-decoration: underline;
   }
 }
 </style>
