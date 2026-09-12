@@ -1,5 +1,10 @@
 <template>
   <view class="orders-page">
+    <!-- 演示模式提示：兑换不会真实发货 -->
+    <view class="demo-tip-slot" v-if="isShopDemo()">
+      <DemoNotice :text="SHOP_DEMO.banner" />
+    </view>
+
     <!-- 状态筛选 Tab -->
     <view class="status-tabs">
       <scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
@@ -38,7 +43,7 @@
               <text class="total">共 {{ order.totalPoints }} 积分</text>
             </view>
           </view>
-          <u-icon name="arrow-right" color="#C0C4CC" size="14" />
+          <Icon name="chevron_right" color="#C0C4CC" size="14" />
         </view>
         <view class="order-footer">
           <text class="time">{{ formatDateTime(order.createTime) }}</text>
@@ -57,19 +62,23 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
+import DemoNotice from '@/components/DemoNotice.vue';
 import { ref, computed } from 'vue';
 import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app';
 import EmptyState from '@/components/EmptyState.vue';
 import { getOrderList } from '@/api/shop.js';
 import { formatDateTime, fullImageUrl } from '@/utils/index.js';
+import { isShopDemo, SHOP_DEMO, shopStatusText } from '@/config/shopDemo.js';
 
-const statusTabs = [
+/** 状态筛选：演示模式下"待发货/已发货"改为中性的"待处理/已处理" */
+const statusTabs = computed(() => [
   { label: '全部', value: '' },
-  { label: '待发货', value: '0' },
-  { label: '已发货', value: '1' },
+  { label: isShopDemo() ? '待处理' : '待发货', value: '0' },
+  { label: isShopDemo() ? '已处理' : '已发货', value: '1' },
   { label: '已完成', value: '2' },
   { label: '已取消', value: '3' },
-];
+]);
 
 const STATUS_TEXT = {
   '0': '待发货',
@@ -93,7 +102,7 @@ const loadStatus = ref('loadmore');
 const pageParams = ref({ pageNum: 1, pageSize: 10 });
 
 const emptyText = computed(() => {
-  const tab = statusTabs.find((t) => t.value === currentStatus.value);
+  const tab = statusTabs.value.find((t) => t.value === currentStatus.value);
   return tab && tab.value ? `暂无${tab.label}订单` : '暂无订单';
 });
 
@@ -111,7 +120,7 @@ onReachBottom(() => {
   loadMore();
 });
 
-const statusText = (status) => STATUS_TEXT[String(status)] || '未知';
+const statusText = (status) => shopStatusText(status, STATUS_TEXT[String(status)] || '未知');
 const statusType = (status) => STATUS_TYPE[String(status)] || 'info';
 
 const switchStatus = (value) => {
@@ -164,6 +173,11 @@ const goDetail = (order) => {
   min-height: 100vh;
   padding: 20rpx 20rpx 40rpx;
   background-color: $pet-bg;
+}
+
+/* 演示模式提示条 */
+.demo-tip-slot {
+  margin-bottom: 20rpx;
 }
 
 .status-tabs {

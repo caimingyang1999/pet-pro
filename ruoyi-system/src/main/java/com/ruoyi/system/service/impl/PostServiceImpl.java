@@ -87,9 +87,9 @@ public class PostServiceImpl extends ServiceImpl<PetPostMapper, PetPost> impleme
      * 管理端-动态列表
      */
     @Override
-    public List<PetPost> getPostListAdmin(String status, Date beginTime, Date endTime)
+    public List<PetPost> getPostListAdmin(String status, Long userId, Date beginTime, Date endTime)
     {
-        return baseMapper.selectPostListAdmin(status, beginTime, endTime);
+        return baseMapper.selectPostListAdmin(status, userId, beginTime, endTime);
     }
 
     /**

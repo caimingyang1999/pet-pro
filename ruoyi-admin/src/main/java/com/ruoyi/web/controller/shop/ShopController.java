@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
@@ -43,9 +44,12 @@ public class ShopController extends BaseController
     /**
      * 获取分类树
      *
+     * 允许匿名访问：游客可浏览商城分类。
+     *
      * @return 分类树形列表
      */
     @ApiOperation("获取分类树")
+    @Anonymous
     @GetMapping("/categories")
     public AjaxResult categories()
     {
@@ -56,6 +60,8 @@ public class ShopController extends BaseController
     /**
      * 商品列表（支持分类ID、关键词、分页）
      *
+     * 允许匿名访问：游客可浏览积分商城商品。
+     *
      * @param categoryId 分类ID
      * @param keyword    搜索关键词
      * @param pageNum    当前页码
@@ -63,6 +69,7 @@ public class ShopController extends BaseController
      * @return 商品分页列表
      */
     @ApiOperation("商品列表")
+    @Anonymous
     @GetMapping("/products")
     public TableDataInfo products(
             @ApiParam(name = "categoryId", value = "分类ID") @RequestParam(required = false) Long categoryId,
@@ -83,10 +90,13 @@ public class ShopController extends BaseController
     /**
      * 商品详情
      *
+     * 允许匿名访问：游客可查看商品详情。
+     *
      * @param productId 商品ID
      * @return 商品详情
      */
     @ApiOperation("商品详情")
+    @Anonymous
     @GetMapping("/products/{productId}")
     public AjaxResult productDetail(
             @ApiParam(name = "productId", value = "商品ID", required = true)

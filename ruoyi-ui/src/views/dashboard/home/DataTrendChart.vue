@@ -11,7 +11,7 @@
     <div class="chart-body" ref="chartRef"></div>
     <div class="chart-legend">
       <div
-        v-for="item in trendData.series"
+        v-for="item in trend.series"
         :key="item.name"
         class="legend-item"
         :class="{ active: activeSeries.includes(item.name) }"
@@ -27,22 +27,42 @@
 <script>
 import * as echarts from 'echarts'
 import resize from '../mixins/resize'
-import { dataTrendData } from './mock'
 
 export default {
   name: 'DataTrendChart',
   mixins: [resize],
+  props: {
+    // 趋势数据，由父级统一拉取后下发
+    trend: {
+      type: Object,
+      default: () => ({ dates: [], series: [] })
+    },
+    // 当前统计天数（7/14/30），用于同步时间范围下拉
+    days: {
+      type: Number,
+      default: 7
+    }
+  },
   data() {
     return {
       chart: null,
-      range: '7',
-      trendData: dataTrendData,
-      activeSeries: dataTrendData.series.map(s => s.name)
+      range: String(this.days),
+      activeSeries: []
     }
   },
   watch: {
+    // 父级数据到位后刷新可选图例，进而触发重绘
+    trend(val) {
+      this.activeSeries = (val && val.series ? val.series : []).map(s => s.name)
+    },
+    // 同步父级天数变化，避免下拉与实际数据窗口不一致
+    days(val) {
+      if (String(val) !== this.range) {
+        this.range = String(val)
+      }
+    },
     range() {
-      this.renderChart()
+      this.$emit('range-change', Number(this.range))
     },
     activeSeries: {
       deep: true,
@@ -78,8 +98,13 @@ export default {
       }
     },
     renderChart() {
-      const dates = this.trendData.dates
-      const series = this.trendData.series
+      // 数据可能早于图表初始化到达，此时跳过绘制
+      if (!this.chart) {
+        return
+      }
+      const trend = this.trend || { dates: [], series: [] }
+      const dates = trend.dates || []
+      const series = (trend.series || [])
         .filter(s => this.activeSeries.includes(s.name))
         .map(s => ({
           name: s.name,

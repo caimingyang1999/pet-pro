@@ -1,64 +1,42 @@
 import { useUserStore } from '@/store/user.js';
+import { SERVER_BASE, BASE_URL } from '@/config/server.js';
+import { recoverSession, setSessionHooks } from '@/utils/session.js';
 
-// 服务器根地址，用于非 /api/v1 前缀的接口（如文件上传 /system/user/profile/avatar、/common/upload 等）
-// 通过根目录 .env 文件配置（VITE_DEV_SERVER_BASE / VITE_PROD_SERVER_BASE + VITE_API_PREFIX）
-// 真机调试时把 VITE_DEV_SERVER_BASE 改为电脑的局域网 IP，例如 http://192.168.1.6:8080
-// （localhost 在手机上指向手机自己，会导致 ERR_CONNECTION_REFUSED）
-const {
-  VITE_DEV_SERVER_BASE,
-  VITE_PROD_SERVER_BASE,
-  VITE_API_PREFIX,
-  PROD,
-} = import.meta.env;
-export const SERVER_BASE = PROD
-  ? (VITE_PROD_SERVER_BASE || 'http://192.168.1.6:8080')
-  : (VITE_DEV_SERVER_BASE || 'http://192.168.1.6:8080');
-// API 接口完整地址 = 服务器根地址 + 接口前缀
-export const BASE_URL = `${SERVER_BASE}${VITE_API_PREFIX || '/api/v1'}`;
+// 地址常量统一在 config/server.js 计算，这里原样转出，保持既有引用路径可用
+export { SERVER_BASE, BASE_URL };
 
-const LOGIN_PAGE_URL = '/pages/login/index';
-let isRedirectingToLogin = false;
-
-const redirectToLogin = () => {
-  if (isRedirectingToLogin) return;
-
-  const pages = getCurrentPages();
-  const currentRoute = pages[pages.length - 1]?.route;
-  if (
-    currentRoute === 'pages/login/index' ||
-    currentRoute === 'pages/login/register'
-  ) {
-    return;
-  }
-
-  isRedirectingToLogin = true;
-  const resetRedirectState = () => {
-    setTimeout(() => { isRedirectingToLogin = false; }, 300);
-  };
-
-  uni.reLaunch({
-    url: LOGIN_PAGE_URL,
-    complete: resetRedirectState,
-  });
-};
-
-// 登录过期统一处理：清除用户信息（含 Pinia 状态与本地存储）并跳转登录页
-const handleTokenExpired = () => {
-  try {
-    const userStore = useUserStore();
-    userStore.logout();
-  } catch (e) {
-    // store 未初始化时兜底，直接清除本地存储
-    uni.removeStorageSync('token');
-    uni.removeStorageSync('userInfo');
-  }
-  uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' });
-  setTimeout(() => { redirectToLogin(); }, 1500);
-};
+// 会话恢复的登录态同步：由 utils/session.js 在静默重登成功/失败时回调，
+// 这里负责把结果同步到 Pinia 与本地存储（store 必须在调用时再取，不能提到模块顶层）
+setSessionHooks({
+  onRecovered: ({ token, userId }) => {
+    try {
+      const userStore = useUserStore();
+      userStore.setToken(token);
+      if (userId) userStore.setUserId(userId);
+      // 登录态恢复后刷新用户资料（积分等可能已变化），失败不影响主流程
+      userStore.fetchUserInfo().catch(() => {});
+    } catch (e) {
+      // store 未初始化时兜底，直接写本地存储
+      uni.setStorageSync('token', token);
+    }
+  },
+  onExpired: () => {
+    try {
+      const userStore = useUserStore();
+      userStore.logout();
+    } catch (e) {
+      // store 未初始化时兜底，直接清除本地存储
+      uni.removeStorageSync('token');
+      uni.removeStorageSync('userInfo');
+    }
+  },
+});
 
 const request = (options) => {
   return new Promise((resolve, reject) => {
     const token = uni.getStorageSync('token') || '';
+    // 本次请求发起时是否处于登录态，用于区分"登录过期"与"游客访问受限接口"
+    const wasLoggedIn = !!token;
 
     const headers = {
       'Content-Type': 'application/json',
@@ -67,6 +45,30 @@ const request = (options) => {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
+
+    /**
+     * 401 的两种语义分流处理
+     *
+     * - 游客态（本次请求发起时就无 token）：静默失败，由调用方按需提示，
+     *   不做任何跳转，避免"一打开小程序就被踢到登录页"，违反微信审核对浏览体验的要求；
+     * - 已登录态（token 失效）：先尝试静默恢复登录态，成功后自动重放本次请求，
+     *   用户全程无感；恢复不了才由 session 层弹窗引导，且不强制清空页面栈。
+     */
+    const handleUnauthorized = (payload) => {
+      if (!wasLoggedIn) {
+        reject(payload);
+        return;
+      }
+
+      recoverSession().then((restored) => {
+        // 每个请求最多重放一次，避免新 token 同样失效时陷入死循环
+        if (restored && !options._retried) {
+          request({ ...options, _retried: true }).then(resolve).catch(reject);
+        } else {
+          reject(payload);
+        }
+      });
+    };
 
     uni.request({
       url: `${BASE_URL}${options.url}`,
@@ -81,10 +83,11 @@ const request = (options) => {
           if (data.code === 200 || data.code === 0) {
             resolve(data);
           } else if (data.code === 401) {
-            handleTokenExpired();
-            reject(data);
+            handleUnauthorized(data);
           } else {
-            uni.showToast({ title: data.msg || '请求失败', icon: 'none' });
+            if (!options.silent) {
+              uni.showToast({ title: data.msg || '请求失败', icon: 'none' });
+            }
             reject(data);
           }
         } else {
@@ -96,7 +99,7 @@ const request = (options) => {
             msg: errData.msg || `HTTP ${res.statusCode}`,
           };
           if (res.statusCode === 401) {
-            handleTokenExpired();
+            handleUnauthorized(err);
           } else if (!options.silent) {
             uni.showToast({ title: err.msg, icon: 'none' });
           }
@@ -114,8 +117,8 @@ const request = (options) => {
   });
 };
 
-export const get = (url, params = {}) => {
-  return request({ url, method: 'GET', data: params });
+export const get = (url, params = {}, options = {}) => {
+  return request({ url, method: 'GET', data: params, ...options });
 };
 
 export const post = (url, data = {}, options = {}) => {

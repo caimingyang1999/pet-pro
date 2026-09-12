@@ -1,7 +1,7 @@
 <template>
   <view class="likes-page">
     <view v-if="!list.length && !loading" class="empty-wrap">
-      <text class="empty-icon">❤️</text>
+      <Icon class="empty-icon" name="heart_fill" :size="58" color="#FFC8A2" />
       <text class="empty-text">还没有点赞任何动态</text>
       <text class="empty-hint">去首页发现精彩内容吧</text>
     </view>
@@ -34,14 +34,14 @@
             </view>
             <text class="content" v-if="post.content">{{ truncate(post.content, 60) }}</text>
             <view class="meta-row">
-              <text class="meta-item">
-                <text class="meta-icon">❤️</text>
-                {{ post.likeCount || 0 }}
-              </text>
-              <text class="meta-item">
-                <text class="meta-icon">💬</text>
-                {{ post.commentCount || 0 }}
-              </text>
+              <view class="meta-item">
+                <Icon class="meta-icon" name="heart_fill" :size="12" color="#E8607F" />
+                <text>{{ post.likeCount || 0 }}</text>
+              </view>
+              <view class="meta-item">
+                <Icon class="meta-icon" name="message" :size="12" color="#8A8D9A" />
+                <text>{{ post.commentCount || 0 }}</text>
+              </view>
             </view>
           </view>
 
@@ -71,6 +71,7 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { getMyLikePosts } from '@/api/post.js';

@@ -100,6 +100,7 @@ import { useUserStore } from '@/store/user.js';
 import Icon from '@/components/Icon.vue';
 import { toggleFollow as toggleFollowApi } from '@/api/follow.js';
 import { showToast } from '@/utils/index.js';
+import { requireLogin } from '@/utils/auth.js';
 
 const props = defineProps({
   post: {
@@ -186,11 +187,8 @@ const goUserHome = () => {
 };
 
 const handleToggleFollow = async () => {
-  const token = uni.getStorageSync('token');
-  if (!token) {
-    showToast('请先登录');
-    return;
-  }
+  // 关注需登录，由用户自行选择是否登录
+  if (!(await requireLogin('关注 TA'))) return;
   try {
     const res = await toggleFollowApi(props.post.userId);
     const nowFollowed = res.followed !== undefined ? res.followed : !props.post.isFollowed;

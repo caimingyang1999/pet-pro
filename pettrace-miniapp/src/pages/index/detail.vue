@@ -15,7 +15,7 @@
         </view>
         <!-- 自己的动态可删除 -->
         <view v-if="isOwner" class="more-btn" @click="handleDeletePost">
-          <u-icon name="trash" color="#999" size="18" />
+          <Icon name="trash" color="#999" size="18" />
         </view>
       </view>
 
@@ -37,10 +37,10 @@
 
       <!-- 点赞/评论数据 -->
       <view class="post-stats">
-        <text class="stat-item" @click="showLikes">
-          <u-icon name="heart" color="#FF8C42" size="14" />
-          {{ postDetail.likeCount || 0 }} 赞
-        </text>
+        <view class="stat-item" @click="showLikes">
+          <Icon name="heart" color="#FF8C42" size="14" />
+          <text>{{ postDetail.likeCount || 0 }} 赞</text>
+        </view>
         <text class="stat-item">{{ postDetail.commentCount || 0 }} 评论</text>
         <text class="stat-item">{{ postDetail.viewCount || 0 }} 浏览</text>
       </view>
@@ -48,7 +48,7 @@
       <!-- 操作栏 -->
       <view class="post-actions">
         <view class="action" @click="handleLikePost">
-          <u-icon
+          <Icon
             :name="postDetail.isLike ? 'heart-fill' : 'heart'"
             :color="postDetail.isLike ? '#FF8C42' : '#576B95'"
             size="22"
@@ -56,7 +56,7 @@
           <text :class="{ liked: postDetail.isLike }">赞</text>
         </view>
         <view class="action" @click="focusComment">
-          <u-icon name="chat" color="#576B95" size="22" />
+          <Icon name="chat" color="#576B95" size="22" />
           <text>评论</text>
         </view>
       </view>
@@ -80,7 +80,7 @@
               </view>
               <text class="comment-content">{{ item.content }}</text>
               <view class="comment-reply-btn" @click="replyComment(item)">
-                <u-icon name="chat" color="#576B95" size="12" />
+                <Icon name="chat" color="#576B95" size="12" />
                 <text>回复</text>
               </view>
             </view>
@@ -100,7 +100,7 @@
                 </view>
                 <text class="comment-content">{{ child.content }}</text>
                 <view class="comment-reply-btn" @click="replyComment(item, child)">
-                  <u-icon name="chat" color="#576B95" size="12" />
+                  <Icon name="chat" color="#576B95" size="12" />
                   <text>回复</text>
                 </view>
               </view>
@@ -134,7 +134,7 @@
           @confirm="submitComment"
         />
         <view v-if="replyTarget" class="cancel-reply" @click="cancelReply">
-          <u-icon name="close-circle" color="#ccc" size="16" />
+          <Icon name="close_circle" color="#ccc" size="16" />
         </view>
       </view>
       <view class="send-btn" @click="submitComment">
@@ -145,10 +145,12 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, computed, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { getPostDetail, getComments, addComment, likePost, deletePost } from '@/api/post.js';
 import { formatTime, showToast, showLoading, hideLoading, fullImageUrl } from '@/utils/index.js';
+import { requireLogin } from '@/utils/auth.js';
 import { useUserStore } from '@/store/user.js';
 
 const userStore = useUserStore();
@@ -258,6 +260,8 @@ const loadMoreComments = () => {
 
 // 点赞
 const handleLikePost = async () => {
+  // 游客可浏览详情，点赞需登录（由用户自行选择是否登录）
+  if (!(await requireLogin('点赞'))) return;
   try {
     const res = await likePost(postId.value);
     // 后端返回 { code: 200, liked: true/false }
@@ -327,11 +331,8 @@ const submitComment = async () => {
     showToast('请输入评论内容');
     return;
   }
-  const token = uni.getStorageSync('token');
-  if (!token) {
-    showToast('请先登录');
-    return;
-  }
+  // 评论需登录，由用户自行选择是否登录
+  if (!(await requireLogin('发表评论'))) return;
   try {
     showLoading('评论中...');
     const data = { content: text };

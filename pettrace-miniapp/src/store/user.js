@@ -24,9 +24,24 @@ export const useUserStore = defineStore('user', () => {
     uni.setStorageSync('token', val);
   };
 
+  /**
+   * 记录当前账号 ID
+   *
+   * 用途：token 过期后静默重登时，用于校验"换回来的还是同一个账号"。
+   * 后端 /wx/login 在 openid 查不到用户时会直接创建新账号，
+   * 若不做校验，未绑定过 openid 的老用户会被静默切换成一个新号。
+   * 注意：主动退出登录时不清除该值，作为下次校验的基准。
+   */
+  const setUserId = (val) => {
+    if (val === null || val === undefined || val === '') return;
+    uni.setStorageSync('userId', String(val));
+  };
+
   const setUserInfo = (val) => {
     userInfo.value = val;
     uni.setStorageSync('userInfo', JSON.stringify(val));
+    // 用户资料中带回 userId 时同步记录，作为静默重登的一致性校验基准
+    if (val && val.userId) setUserId(val.userId);
   };
 
   const initUserInfo = () => {
@@ -85,6 +100,7 @@ export const useUserStore = defineStore('user', () => {
     const data = res.data || res || {};
     if (data.token) {
       setToken(data.token);
+      setUserId(data.userId);
       try {
         await fetchUserInfo();
       } catch (e) {
@@ -113,6 +129,7 @@ export const useUserStore = defineStore('user', () => {
       const loginData = loginRes.data || loginRes || {};
       if (loginData.token) {
         setToken(loginData.token);
+        setUserId(loginData.userId);
         await bindPhone({ code: phoneCode });
       }
       res = loginRes;
@@ -121,6 +138,7 @@ export const useUserStore = defineStore('user', () => {
     const data = res.data || res || {};
     if (data.token) {
       setToken(data.token);
+      setUserId(data.userId);
       // 登录接口只返回 token，需要额外请求用户信息接口
       try {
         await fetchUserInfo();
@@ -142,6 +160,7 @@ export const useUserStore = defineStore('user', () => {
     const data = res.data || res || {};
     if (data.token) {
       setToken(data.token);
+      setUserId(data.userId);
       // 登录接口只返回 token，需要额外请求用户信息接口
       try {
         await fetchUserInfo();
@@ -161,6 +180,7 @@ export const useUserStore = defineStore('user', () => {
     const data = res.data || res || {};
     if (data.token) {
       setToken(data.token);
+      setUserId(data.userId);
       // 优先使用注册接口返回的用户信息
       if (data.user || data.userInfo) {
         setUserInfo(data.user || data.userInfo);
@@ -187,6 +207,9 @@ export const useUserStore = defineStore('user', () => {
     if (data.token) {
       setToken(data.token);
     }
+    if (data.userId) {
+      setUserId(data.userId);
+    }
     if (data) {
       setUserInfo(data);
     }
@@ -195,7 +218,7 @@ export const useUserStore = defineStore('user', () => {
 
   const fetchUserInfo = async () => {
     try {
-      console.log('[fetchUserInfo] 开始请求 /user/info，当前 token:', token.value ? `${token.value.substring(0, 20)}...` : '空');
+      console.log('[fetchUserInfo] 开始请求 /user/info，登录态:', token.value ? '已登录' : '未登录');
       const res = await getUserInfo();
       console.log('[fetchUserInfo] 接口返回:', JSON.stringify(res));
       if (res && res.data) {
@@ -228,6 +251,7 @@ export const useUserStore = defineStore('user', () => {
     userInfo,
     isLogin,
     setToken,
+    setUserId,
     setUserInfo,
     initUserInfo,
     getWxCode,

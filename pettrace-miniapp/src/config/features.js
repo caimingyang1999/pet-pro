@@ -16,6 +16,9 @@ const FEATURES_CACHE_KEY = 'app_features';
 // 本地默认开关（.env 未配置时默认开启）
 const LOCAL_DEFAULT = {
   adviserEnabled: import.meta.env.VITE_ADVISER_ENABLED !== 'false',
+  // 商城演示模式：个人作品，兑换不真实发货，界面统一展示「功能演示」提示。
+  // 日后升级企业主体并真实发货时，配置 VITE_SHOP_DEMO_MODE=false 或后端下发 false 即可关闭。
+  shopDemoMode: import.meta.env.VITE_SHOP_DEMO_MODE !== 'false',
 };
 
 export const features = reactive({ ...LOCAL_DEFAULT });
@@ -38,6 +41,9 @@ export function fetchFeatures() {
         if (typeof remote.adviserEnabled === 'boolean') {
           features.adviserEnabled = remote.adviserEnabled;
         }
+        if (typeof remote.shopDemoMode === 'boolean') {
+          features.shopDemoMode = remote.shopDemoMode;
+        }
         uni.setStorageSync(FEATURES_CACHE_KEY, remote);
       }
     } catch (e) {
@@ -45,6 +51,9 @@ export function fetchFeatures() {
       const cached = uni.getStorageSync(FEATURES_CACHE_KEY);
       if (cached && typeof cached.adviserEnabled === 'boolean') {
         features.adviserEnabled = cached.adviserEnabled;
+      }
+      if (cached && typeof cached.shopDemoMode === 'boolean') {
+        features.shopDemoMode = cached.shopDemoMode;
       }
     }
   })();

@@ -18,11 +18,16 @@
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "glob",
+        "value": "**/.DS_Store"
+      }
+    ],
     "include": []
   },
-  "appid": "wx88ba1e07900a1efb",
+  "appid": "wx262afb1a013d30f2",
   "editorSetting": {},
   "projectname": "pettrace-miniapp",
-  "description": "宠迹 - 宠物社区小程序"
+  "description": "宠迹 - 宠物健康管理工具"
 }

@@ -33,8 +33,14 @@ public interface IPostService extends IService<PetPost>
 
     /**
      * 管理端-动态列表
+     *
+     * @param status    审核状态（0-待审核 1-通过 2-拒绝），可空
+     * @param userId    发布用户ID，可空
+     * @param beginTime 发布起始时间，可空
+     * @param endTime   发布结束时间，可空
+     * @return 动态集合
      */
-    List<PetPost> getPostListAdmin(String status, Date beginTime, Date endTime);
+    List<PetPost> getPostListAdmin(String status, Long userId, Date beginTime, Date endTime);
 
     /**
      * 发布动态

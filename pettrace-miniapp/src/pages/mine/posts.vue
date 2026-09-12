@@ -19,7 +19,7 @@
     </view>
 
     <view v-if="!loading && !postList.length" class="empty-wrap">
-      <text class="empty-icon">📝</text>
+      <Icon class="empty-icon" name="edit" :size="58" color="#FFC8A2" />
       <text class="empty-text">还没有发布过动态</text>
       <view class="go-publish-btn" @click="goPublish">去发布</view>
     </view>
@@ -27,6 +27,7 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, onMounted } from 'vue';
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import PostCard from '@/components/PostCard.vue';

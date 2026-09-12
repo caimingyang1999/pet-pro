@@ -6,13 +6,13 @@
     <div class="chart-area">
       <div class="chart-wrap" ref="chartRef"></div>
       <div class="center-info">
-        <div class="center-value">{{ orderData.total.toLocaleString() }}</div>
-        <div class="center-label">{{ orderData.totalLabel }}</div>
+        <div class="center-value">{{ (orderStatus.total || 0).toLocaleString() }}</div>
+        <div class="center-label">{{ orderStatus.totalLabel }}</div>
       </div>
     </div>
     <div class="legend-list">
       <div
-        v-for="item in orderData.legend"
+        v-for="item in orderStatus.legend"
         :key="item.name"
         class="legend-item"
       >
@@ -32,15 +32,26 @@
 <script>
 import * as echarts from 'echarts'
 import resize from '../mixins/resize'
-import { orderStatusData } from './mock'
 
 export default {
   name: 'OrderStatusPie',
   mixins: [resize],
+  props: {
+    // 订单状态分布数据，由父级统一拉取后下发
+    orderStatus: {
+      type: Object,
+      default: () => ({ total: 0, totalLabel: '', legend: [] })
+    }
+  },
   data() {
     return {
-      chart: null,
-      orderData: orderStatusData
+      chart: null
+    }
+  },
+  watch: {
+    // 父级数据到位后重绘
+    orderStatus() {
+      this.renderChart()
     }
   },
   mounted() {
@@ -60,7 +71,12 @@ export default {
       this.renderChart()
     },
     renderChart() {
-      const data = this.orderData.legend.map(item => ({
+      // 数据可能早于图表初始化到达，此时跳过绘制
+      if (!this.chart) {
+        return
+      }
+      const legend = (this.orderStatus && this.orderStatus.legend) || []
+      const data = legend.map(item => ({
         name: item.name,
         value: item.value,
         itemStyle: { color: item.color }

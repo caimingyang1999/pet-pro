@@ -1,13 +1,14 @@
 package com.ruoyi.system.service.impl;
 
-import java.util.Calendar;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import javax.annotation.Resource;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.system.domain.UserPointsLog;
@@ -145,24 +146,18 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
     @Transactional(rollbackFor = Exception.class)
     public SignInVO signIn(Long userId)
     {
-        // 取今日零点 Date，与数据库 DATE 列精确匹配
-        Date today = getTodayDate();
+        // 取今日日期（LocalDate，与数据库 DATE 列一一对应，不做时区换算）
+        LocalDate today = getTodayDate();
         // 1. 查询今日是否已签到
         LambdaQueryWrapper<UserSignIn> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSignIn::getUserId, userId)
                .eq(UserSignIn::getSignDate, today);
         UserSignIn exist = userSignInMapper.selectOne(wrapper);
 
-        SignInVO vo = new SignInVO();
         if (exist != null)
         {
             // 今日已签到
-            vo.setSigned(true);
-            vo.setPointsReward(0);
-            vo.setMessage("今日已签到");
-            com.ruoyi.common.core.domain.entity.SysUser user = sysUserMapper.selectUserById(userId);
-            vo.setPointsBalance(user != null && user.getPoints() != null ? user.getPoints() : 0);
-            return vo;
+            return buildSignInResult(userId, 0, "今日已签到");
         }
 
         // 2. 插入签到记录
@@ -170,17 +165,40 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
         signIn.setUserId(userId);
         signIn.setSignDate(today);
         signIn.setPointsReward(SIGN_IN_REWARD);
-        userSignInMapper.insert(signIn);
+        try
+        {
+            userSignInMapper.insert(signIn);
+        }
+        catch (DuplicateKeyException e)
+        {
+            // 极端情况下的并发重复提交：唯一索引 uk_user_sign_date 已挡住，
+            // 这里按"今日已签到"返回，避免把原始 SQL 异常抛给小程序端
+            return buildSignInResult(userId, 0, "今日已签到");
+        }
 
         // 3. 发放签到积分
         addPoints(userId, SIGN_IN_REWARD, "sign_in", signIn.getId());
 
         // 4. 构造返回结果
-        com.ruoyi.common.core.domain.entity.SysUser user = sysUserMapper.selectUserById(userId);
+        return buildSignInResult(userId, SIGN_IN_REWARD, "签到成功，获得 " + SIGN_IN_REWARD + " 积分");
+    }
+
+    /**
+     * 组装签到返回结果（附带最新积分余额）
+     *
+     * @param userId 用户ID
+     * @param reward 本次获得的积分，0 表示未发放
+     * @param message 提示文案
+     * @return 签到结果
+     */
+    private SignInVO buildSignInResult(Long userId, int reward, String message)
+    {
+        SignInVO vo = new SignInVO();
         vo.setSigned(true);
-        vo.setPointsReward(SIGN_IN_REWARD);
+        vo.setPointsReward(reward);
+        vo.setMessage(message);
+        SysUser user = sysUserMapper.selectUserById(userId);
         vo.setPointsBalance(user != null && user.getPoints() != null ? user.getPoints() : 0);
-        vo.setMessage("签到成功，获得 " + SIGN_IN_REWARD + " 积分");
         return vo;
     }
 
@@ -193,7 +211,7 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
     @Override
     public SignInVO getSignInStatus(Long userId)
     {
-        Date today = getTodayDate();
+        LocalDate today = getTodayDate();
         LambdaQueryWrapper<UserSignIn> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSignIn::getUserId, userId)
                .eq(UserSignIn::getSignDate, today);
@@ -216,16 +234,13 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsLogMapper, User
     }
 
     /**
-     * 获取今日零点 Date（清除时分秒），用于与数据库 DATE 类型列精确比较
+     * 获取今日日期（纯日期，不含时间）
+     *
+     * 用 LocalDate 而非 java.util.Date：签发到 DATE 列时不做任何时区换算，
+     * 与 MySQL 自身的 CURDATE() 语义一致，避免跨天误判。
      */
-    private Date getTodayDate()
+    private LocalDate getTodayDate()
     {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Date());
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        return cal.getTime();
+        return LocalDate.now();
     }
 }

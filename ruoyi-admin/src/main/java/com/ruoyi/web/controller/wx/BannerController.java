@@ -5,6 +5,7 @@ import javax.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.system.domain.Banner;
@@ -27,11 +28,12 @@ public class BannerController extends BaseController
 
     /**
      * 获取启用的轮播图列表（小程序端）
-     * 无需登录即可访问
+     * 无需登录即可访问（游客同样可浏览首页轮播内容）
      *
      * @return 轮播图列表
      */
     @ApiOperation("获取启用的轮播图列表")
+    @Anonymous
     @GetMapping("/list")
     public AjaxResult getActiveBanners()
     {

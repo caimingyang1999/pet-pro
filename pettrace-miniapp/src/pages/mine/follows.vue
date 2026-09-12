@@ -52,7 +52,7 @@
 
       <!-- 空状态 -->
       <view v-if="!loading && !list.length" class="empty-wrap">
-        <text class="empty-icon">🐾</text>
+        <Icon class="empty-icon" name="pet" :size="58" color="#FFC8A2" />
         <text class="empty-text">{{ currentTab === 'follow' ? '还没有关注任何人' : '还没有粉丝' }}</text>
       </view>
 
@@ -66,6 +66,7 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, onMounted } from 'vue';
 import { onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
 import { fullImageUrl } from '@/utils/index.js';

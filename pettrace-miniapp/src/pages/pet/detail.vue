@@ -32,13 +32,39 @@
       </view>
     </view>
 
+    <!-- ========== 健康记录快捷入口 ========== -->
+    <view class="quick-card">
+      <view class="quick-item pet-press" @click="goWeight">
+        <view class="quick-icon" style="background:#E5F4FF">
+          <Icon name="weight" :size="20" color="#3D9BE9" />
+        </view>
+        <text class="quick-name">体重记录</text>
+      </view>
+      <view class="quick-item pet-press" @click="goAlbum">
+        <view class="quick-icon" style="background:#E8F7EB">
+          <Icon name="images" :size="20" color="#4CAF7D" />
+        </view>
+        <text class="quick-name">成长相册</text>
+      </view>
+      <view class="quick-item pet-press" @click="goHealth">
+        <view class="quick-icon" style="background:#FFF7DE">
+          <Icon name="medal" :size="20" color="#E8A33D" />
+        </view>
+        <text class="quick-name">健康提醒</text>
+      </view>
+    </view>
+
     <!-- ========== 基本信息 ========== -->
     <view class="info-card">
       <view class="section-title">
-        <view class="title-icon">📋</view>
+        <view class="title-icon"><Icon name="file_text" :size="16" color="#FF8C42" /></view>
         <text>基本信息</text>
       </view>
       <view class="info-grid">
+        <view class="info-item">
+          <text class="info-label">宠物类型</text>
+          <text class="info-value">{{ petTypeText }}</text>
+        </view>
         <view class="info-item">
           <text class="info-label">品种</text>
           <text class="info-value">{{ pet.breed || '未记录' }}</text>
@@ -69,7 +95,7 @@
     <!-- ========== 疫苗记录（时间线） ========== -->
     <view class="info-card" v-if="pet.vaccineList && pet.vaccineList.length">
       <view class="section-title">
-        <view class="title-icon">💉</view>
+        <view class="title-icon"><Icon name="vaccine" :size="16" color="#FF8C42" /></view>
         <text>疫苗记录</text>
         <text class="vaccine-count">共 {{ pet.vaccineList.length }} 针</text>
       </view>
@@ -108,7 +134,7 @@
     <!-- ========== 备注 ========== -->
     <view class="info-card" v-if="pet.remark">
       <view class="section-title">
-        <view class="title-icon">💌</view>
+        <view class="title-icon"><Icon name="mail" :size="16" color="#FF8C42" /></view>
         <text>小备注</text>
       </view>
       <view class="remark-box">
@@ -130,7 +156,7 @@
 
   <!-- 加载中 -->
   <view class="loading-wrap" v-else-if="loading">
-    <view class="loading-paw">🐾</view>
+    <view class="loading-paw"><Icon name="pet" :size="28" color="#FF8C42" /></view>
     <text class="loading-text">正在打开档案...</text>
   </view>
 </template>
@@ -140,21 +166,29 @@ import { ref, onMounted, computed } from 'vue';
 import { getPetDetail } from '@/api/pet.js';
 import { fullImageUrl } from '@/utils/index.js';
 import Icon from '@/components/Icon.vue';
+import { PET_TYPE_EMOJI, petTypeLabel } from '@/config/petTypes.js';
 
 const pet = ref(null);
 const petId = ref('');
 const loading = ref(false);
 
 const petEmoji = computed(() => {
+  // 档案里已明确宠物类型时优先采用，避免仅凭品种关键词误判
+  const declared = PET_TYPE_EMOJI[pet.value?.petType];
+  if (declared && pet.value.petType !== 'other') return declared;
   const text = `${pet.value?.breed || ''}${pet.value?.name || ''}`;
   if (/猫|布偶|英短|美短|暹罗|橘/.test(text)) return '🐱';
   if (/狗|犬|柯基|金毛|泰迪|拉布拉多|边牧|柴犬/.test(text)) return '🐶';
   if (/兔/.test(text)) return '🐰';
+  if (/鸟|鹦鹉|虎皮|玄凤/.test(text)) return '🐦';
+  if (/鱼|锦鲤|金鱼|龙鱼/.test(text)) return '🐠';
   if (/仓鼠|鼠/.test(text)) return '🐹';
   return '🐾';
 });
 
 const petClass = computed(() => {
+  // 档案里已明确猫/狗时优先采用，"其他"仍按品种关键词兜底
+  if (pet.value?.petType === 'cat' || pet.value?.petType === 'dog') return pet.value.petType;
   const text = `${pet.value?.breed || ''}${pet.value?.name || ''}`;
   if (/猫|布偶|英短|美短|暹罗|橘/.test(text)) return 'cat';
   if (/狗|犬|柯基|金毛|泰迪|拉布拉多|边牧|柴犬/.test(text)) return 'dog';
@@ -162,6 +196,9 @@ const petClass = computed(() => {
 });
 
 const ageText = computed(() => formatBirthday(pet.value?.birthday));
+
+/** 宠物类型文案（首页养宠知识兴趣推荐的基础数据） */
+const petTypeText = computed(() => petTypeLabel(pet.value?.petType, '未记录'));
 
 /** 获取宠物详情 */
 const fetchDetail = async (id) => {
@@ -198,6 +235,10 @@ const goEdit = () => {
     url: `/pages/pet/edit?id=${petId.value}`,
   });
 };
+
+const goWeight = () => uni.navigateTo({ url: `/pages/pet/weight?petId=${petId.value}` });
+const goAlbum = () => uni.navigateTo({ url: `/pages/pet/album?petId=${petId.value}` });
+const goHealth = () => uni.navigateTo({ url: '/pages/pet/health' });
 
 onMounted(() => {
   const pages = getCurrentPages();
@@ -359,6 +400,40 @@ onMounted(() => {
         }
       }
     }
+  }
+}
+
+/* ========== 健康记录快捷入口 ========== */
+.quick-card {
+  display: flex;
+  align-items: center;
+  margin: 24rpx 24rpx 0;
+  padding: 28rpx 12rpx;
+  border-radius: $radius-lg;
+  background-color: #fff;
+  box-shadow: $shadow-card;
+
+  .quick-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  .quick-icon {
+    width: 84rpx;
+    height: 84rpx;
+    border-radius: 26rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .quick-name {
+    font-size: $font-xs;
+    color: $text-secondary;
+    font-weight: $font-weight-medium;
   }
 }
 

@@ -10,6 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"          column="name"           />
         <result property="avatar"        column="avatar"         />
         <result property="breed"         column="breed"          />
+        <result property="petType"       column="pet_type"       />
         <result property="birthday"      column="birthday"       />
         <result property="gender"        column="gender"         />
         <result property="weight"        column="weight"         />
@@ -20,10 +21,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
         <result property="userName"      column="user_name"      />
+        <result property="vaccineCount"  column="vaccine_count"  />
     </resultMap>
 
     <sql id="selectPetVo">
-        select p.id, p.user_id, p.name, p.avatar, p.breed, p.birthday, p.gender,
+        select p.id, p.user_id, p.name, p.avatar, p.breed, p.pet_type, p.birthday, p.gender,
                p.weight, p.color, p.sterilization, p.remark, p.del_flag,
                p.create_time, p.update_time,
                u.nick_name as user_name
@@ -40,6 +42,49 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </if>
         </where>
         order by p.create_time desc
+    </select>
+
+    <!-- 后台宠物列表：关联用户昵称 + 疫苗记录数统计 -->
+    <select id="selectAdminPetList" resultMap="PetInfoResult">
+        select p.id, p.user_id, p.name, p.avatar, p.breed, p.pet_type, p.birthday, p.gender,
+               p.weight, p.color, p.sterilization, p.remark, p.del_flag,
+               p.create_time, p.update_time,
+               u.nick_name as user_name,
+               (select count(1) from pet_vaccine v where v.pet_id = p.id) as vaccine_count
+        from pet_info p
+        left join sys_user u on p.user_id = u.user_id
+        <where>
+            p.del_flag = '0'
+            <if test="name != null and name != ''">
+                and p.name like concat('%', #{name}, '%')
+            </if>
+            <if test="breed != null and breed != ''">
+                and p.breed like concat('%', #{breed}, '%')
+            </if>
+            <if test="petType != null and petType != ''">
+                and p.pet_type = #{petType}
+            </if>
+            <if test="userKeyword != null and userKeyword != ''">
+                and (u.nick_name like concat('%', #{userKeyword}, '%')
+                     or u.user_name like concat('%', #{userKeyword}, '%')
+                     or u.phonenumber like concat('%', #{userKeyword}, '%'))
+            </if>
+        </where>
+        order by p.create_time desc
+    </select>
+
+    <!-- 宠物详情：带出所属用户昵称（自定义 SQL 需自行带 del_flag 条件） -->
+    <select id="selectPetDetailById" resultMap="PetInfoResult">
+        <include refid="selectPetVo"/>
+        where p.id = #{id} and p.del_flag = '0'
+    </select>
+
+    <!-- 品种去重列表：用于后台筛选下拉 -->
+    <select id="selectDistinctBreeds" resultType="java.lang.String">
+        select distinct p.breed
+        from pet_info p
+        where p.del_flag = '0' and p.breed is not null and p.breed &lt;&gt; ''
+        order by p.breed
     </select>
 
 </mapper>

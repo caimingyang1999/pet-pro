@@ -148,15 +148,18 @@ export function throttle(fn, interval = 500) {
 }
 
 /**
- * 检查是否登录
+ * 检查是否登录（同步）
+ *
+ * @deprecated 建议优先使用 `@/utils/auth.js` 的 `requireLogin()`：
+ * 它会在未登录时以弹窗征询用户意愿，由用户自行决定是否登录，
+ * 而不会把用户强制推向登录页（微信审核明确要求浏览不受阻）。
+ *
  * @returns {boolean}
  */
 export function checkLogin() {
   const token = uni.getStorageSync('token');
   if (!token) {
-    uni.navigateTo({
-      url: '/pages/mine/index',
-    });
+    showToast('登录后可继续操作');
     return false;
   }
   return true;

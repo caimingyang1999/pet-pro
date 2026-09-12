@@ -1,7 +1,7 @@
 <template>
   <view class="empty-state">
     <view class="empty-art">
-      <text class="empty-emoji">{{ emoji }}</text>
+      <Icon class="empty-icon" :name="icon" :size="42" color="#FFB07A" />
     </view>
     <text class="empty-title">{{ text }}</text>
     <text class="empty-sub" v-if="subText">{{ subText }}</text>
@@ -20,20 +20,21 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { computed } from 'vue';
 
-/** 不同 empty mode 对应的可爱插画（emoji 占位） */
-const MODE_EMOJI = {
-  data: '🐾',
-  order: '📦',
-  address: '📍',
-  coupon: '🎟️',
-  message: '💬',
-  search: '🔍',
-  list: '📋',
-  points: '🪙',
-  post: '📝',
-  cart: '🛒',
+/** 不同 empty mode 对应的图标（uni-icons，see components/Icon.vue 的映射表） */
+const MODE_ICON = {
+  data: 'pet',
+  order: 'order',
+  address: 'address',
+  coupon: 'gift',
+  message: 'message',
+  search: 'search',
+  list: 'list',
+  points: 'wallet',
+  post: 'edit',
+  cart: 'order',
 };
 
 const props = defineProps({
@@ -62,7 +63,7 @@ const props = defineProps({
 
 const emit = defineEmits(['click']);
 
-const emoji = computed(() => MODE_EMOJI[props.mode] || '🐾');
+const icon = computed(() => MODE_ICON[props.mode] || 'pet');
 
 const handleClick = () => {
   emit('click');
@@ -86,8 +87,8 @@ const handleClick = () => {
     box-shadow: $shadow-md;
     animation: pet-float 3.2s ease-in-out infinite;
 
-    .empty-emoji {
-      font-size: 84rpx;
+    .empty-icon {
+      animation: pet-float 3.2s ease-in-out infinite;
     }
   }
 

@@ -9,13 +9,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
-import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.PetInfo;
 import com.ruoyi.system.service.IPetInfoService;
 import io.swagger.annotations.Api;
@@ -39,8 +37,12 @@ public class AdminPetController extends BaseController
     /**
      * 宠物列表
      *
-     * @param name   宠物名称（模糊查询）
-     * @param userId 所属用户ID
+     * 返回值含所属用户昵称（userName）与疫苗记录数（vaccineCount），供后台表格展示。
+     *
+     * @param name        宠物名称（模糊查询）
+     * @param userKeyword 所属用户（昵称/账号/手机号，模糊查询）
+     * @param breed       品种（模糊查询）
+     * @param petType     宠物类型（cat-猫 dog-狗 other-其他，筛选下拉）
      * @return 宠物分页列表
      */
     @ApiOperation("宠物列表")
@@ -48,15 +50,26 @@ public class AdminPetController extends BaseController
     @GetMapping
     public TableDataInfo list(
             @ApiParam(name = "name", value = "宠物名称") @RequestParam(required = false) String name,
-            @ApiParam(name = "userId", value = "所属用户ID") @RequestParam(required = false) Long userId)
+            @ApiParam(name = "userKeyword", value = "所属用户昵称/账号/手机号") @RequestParam(required = false) String userKeyword,
+            @ApiParam(name = "breed", value = "品种") @RequestParam(required = false) String breed,
+            @ApiParam(name = "petType", value = "宠物类型（cat/dog/other）") @RequestParam(required = false) String petType)
     {
         startPage();
-        LambdaQueryWrapper<PetInfo> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(StringUtils.isNotEmpty(name), PetInfo::getName, name)
-               .eq(userId != null, PetInfo::getUserId, userId)
-               .orderByDesc(PetInfo::getCreateTime);
-        List<PetInfo> list = petInfoService.list(wrapper);
+        List<PetInfo> list = petInfoService.getAdminPetList(name, userKeyword, breed, petType);
         return getDataTable(list);
+    }
+
+    /**
+     * 品种选项列表（去重，供筛选下拉使用）
+     *
+     * 宠物品种存于 pet_info.breed 自由文本，与商城分类无关，
+     * 因此直接取库内已有品种，避免误用商城分类做筛选。
+     */
+    @ApiOperation("品种选项列表")
+    @GetMapping("/breeds")
+    public AjaxResult breeds()
+    {
+        return AjaxResult.success(petInfoService.getBreedOptions());
     }
 
     /**

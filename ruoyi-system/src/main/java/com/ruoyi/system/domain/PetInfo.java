@@ -1,6 +1,7 @@
 package com.ruoyi.system.domain;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -44,10 +45,24 @@ public class PetInfo implements Serializable
     @ApiModelProperty("品种")
     private String breed;
 
+    /**
+     * 宠物类型
+     *
+     * 单值，取值与文章表 pet_article.pet_type 统一：
+     * cat-猫 / dog-狗 / rabbit-兔子 / bird-鸟 / fish-鱼 / other-其他。
+     * 宠物没有"通用"的概念，因此不含 general；other（或 NULL）不参与文章兴趣优先推荐。
+     */
+    @ApiModelProperty("宠物类型（cat-猫/dog-狗/rabbit-兔子/bird-鸟/fish-鱼/other-其他）")
+    private String petType;
+
     /** 出生日期 */
     @ApiModelProperty("出生日期")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date birthday;
+    /**
+     * 数据库列为 DATE 类型，使用 LocalDate 而非 java.util.Date：
+     * java.util.Date 是时间点，JDBC 会按连接时区做换算，跨时区时会整体偏移一天。
+     */
+    private LocalDate birthday;
 
     /** 性别（0-母 1-公） */
     @ApiModelProperty("性别（0-母 1-公）")
@@ -93,4 +108,9 @@ public class PetInfo implements Serializable
     @ApiModelProperty("所属用户名")
     @TableField(exist = false)
     private String userName;
+
+    /** 疫苗记录数（后台列表统计，非数据库字段） */
+    @ApiModelProperty("疫苗记录数")
+    @TableField(exist = false)
+    private Integer vaccineCount;
 }

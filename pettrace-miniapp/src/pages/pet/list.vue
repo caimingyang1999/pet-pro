@@ -5,35 +5,45 @@
       <view class="header-decor paw-1">🐾</view>
       <view class="header-decor paw-2">🐾</view>
 
-      <!-- 自定义导航栏 -->
-      <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
-        <view class="nav-content">
-          <view class="nav-back" @click="goBack">
-            <Icon name="chevron_left" :size="22" color="#fff" />
-          </view>
-          <text class="nav-title">我的宠物</text>
-          <view class="nav-add" @click="goAdd">
-            <Icon name="plus" :size="20" color="#fff" />
-          </view>
-        </view>
-      </view>
+      <!-- 统一标题栏（本页是 tabBar 页面，不提供返回按钮） -->
+      <NavBar title="我的宠物" />
 
       <view class="header-main">
         <view class="header-info">
           <text class="header-title">我的爱宠 🐾</text>
-          <text class="header-sub" v-if="petList.length">共 {{ petList.length }} 只毛孩子陪伴着你</text>
+          <text class="header-sub" v-if="!isLogin">登录后即可建立爱宠档案</text>
+          <text class="header-sub" v-else-if="petList.length">共 {{ petList.length }} 只毛孩子陪伴着你</text>
           <text class="header-sub" v-else>从第一只毛孩子开始记录吧</text>
         </view>
-        <view class="header-count" v-if="petList.length">
-          <text class="count-num">{{ petList.length }}</text>
-          <text class="count-unit">位家人</text>
+        <!-- 添加按钮放在头部右侧：导航栏右上角会被微信胶囊按钮遮挡，不放那里 -->
+        <view class="header-actions" v-if="isLogin">
+          <view class="header-count" v-if="petList.length">
+            <text class="count-num">{{ petList.length }}</text>
+            <text class="count-unit">位家人</text>
+          </view>
+          <view class="add-fab pet-press" @click="goAdd">
+            <Icon name="plus" :size="22" color="#fff" />
+          </view>
         </view>
       </view>
     </view>
 
     <!-- 加载骨架屏 -->
-    <view v-if="loading && !petList.length" class="pet-list">
+    <view v-if="loading && isLogin && !petList.length" class="pet-list">
       <LoadingState mode="skeleton" type="pet" :count="3" />
+    </view>
+
+    <!-- 未登录：登录引导（宠物档案属于私有数据，仅登录后可见） -->
+    <view class="empty-wrap" v-else-if="!isLogin">
+      <view class="empty-art">
+        <Icon name="locked" :size="44" color="#FFB07A" />
+      </view>
+      <text class="empty-title">登录后查看爱宠档案</text>
+      <text class="empty-desc">宠物档案、疫苗与体重记录仅你自己可见</text>
+      <view class="empty-btn pet-press" @click="handleLogin">
+        <Icon name="user" :size="18" color="#fff" />
+        <text class="empty-btn-text">去登录</text>
+      </view>
     </view>
 
     <!-- 宠物卡片列表 + 添加卡片 -->
@@ -70,18 +80,18 @@
             </text>
           </view>
           <view class="meta-row">
-            <text v-if="getAge(pet.birthday)" class="meta-item">
-              <text class="meta-emoji">🎂</text>
-              {{ getAge(pet.birthday) }}
-            </text>
-            <text v-if="pet.weight" class="meta-item">
-              <text class="meta-emoji">⚖️</text>
-              {{ pet.weight }}kg
-            </text>
+            <view v-if="getAge(pet.birthday)" class="meta-item">
+              <Icon class="meta-emoji" name="cake" :size="12" color="#8A8D9A" />
+              <text>{{ getAge(pet.birthday) }}</text>
+            </view>
+            <view v-if="pet.weight" class="meta-item">
+              <Icon class="meta-emoji" name="weight" :size="12" color="#8A8D9A" />
+              <text>{{ pet.weight }}kg</text>
+            </view>
             <text v-if="pet.color" class="meta-item color-item">{{ pet.color }}</text>
           </view>
           <view v-if="pet.vaccineList && pet.vaccineList.length" class="vaccine-hint">
-            <text class="vaccine-emoji">💉</text>
+            <Icon class="vaccine-emoji" name="vaccine" :size="12" color="#4CAF7D" />
             <text class="vaccine-text">已接种 {{ pet.vaccineList.length }} 针疫苗</text>
           </view>
         </view>
@@ -104,7 +114,7 @@
     <!-- 空状态 -->
     <view class="empty-wrap" v-else>
       <view class="empty-art">
-        <text class="empty-emoji">🐕‍🦺</text>
+        <Icon name="pet" :size="44" color="#FFB07A" />
       </view>
       <text class="empty-title">还没有宠物档案</text>
       <text class="empty-desc">添加你的第一位毛孩子吧~</text>
@@ -120,25 +130,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import LoadingState from '@/components/LoadingState.vue';
+import NavBar from '@/components/NavBar.vue';
 import Icon from '@/components/Icon.vue';
 import { usePetStore } from '@/store/pet.js';
 import { deletePet } from '@/api/pet.js';
 import { showToast, showConfirm, fullImageUrl } from '@/utils/index.js';
+import { isLoggedIn, requireLogin, goLogin } from '@/utils/auth.js';
 
 const petStore = usePetStore();
 const petList = ref([]);
 const loading = ref(false);
-
-const statusBarHeight = ref(20);
-// #ifdef MP-WEIXIN
-try {
-  const sysInfo = uni.getSystemInfoSync();
-  statusBarHeight.value = sysInfo.statusBarHeight || 20;
-} catch (e) {}
-// #endif
+/** 当前登录态：宠物档案为私有数据，未登录时展示登录引导而非空档案 */
+const isLogin = ref(false);
 
 const fetchList = async () => {
   loading.value = true;
@@ -152,10 +158,22 @@ const fetchList = async () => {
   }
 };
 
-const goBack = () => uni.navigateBack({ delta: 1 });
-const goDetail = (id) => uni.navigateTo({ url: `/pages/pet/detail?id=${id}` });
-const goAdd = () => uni.navigateTo({ url: '/pages/pet/edit' });
-const goEdit = (id) => uni.navigateTo({ url: `/pages/pet/edit?id=${id}` });
+/** 跳转登录页（用户主动触发） */
+const handleLogin = () => goLogin();
+
+const goDetail = async (id) => {
+  if (!(await requireLogin('查看爱宠档案'))) return;
+  uni.navigateTo({ url: `/pages/pet/detail?id=${id}` });
+};
+/** 添加宠物档案需要先登录 */
+const goAdd = async () => {
+  if (!(await requireLogin('添加爱宠档案'))) return;
+  uni.navigateTo({ url: '/pages/pet/edit' });
+};
+const goEdit = async (id) => {
+  if (!(await requireLogin('编辑爱宠档案'))) return;
+  uni.navigateTo({ url: `/pages/pet/edit?id=${id}` });
+};
 
 /** 根据品种推断动物 emoji（后端未下发类型字段时按品种关键字兜底） */
 const petEmoji = (pet) => {
@@ -214,8 +232,16 @@ const handleMore = (pet) => {
   });
 };
 
-onMounted(() => fetchList());
-onShow(() => fetchList());
+onShow(() => {
+  isLogin.value = isLoggedIn();
+  if (!isLogin.value) {
+    // 未登录时不请求私有数据，直接展示登录引导
+    petList.value = [];
+    petStore.setPetList([]);
+    return;
+  }
+  fetchList();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -228,8 +254,8 @@ onShow(() => fetchList());
 .header-section {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, #FFB26B 0%, #FF8C42 58%, #F06E2D 100%);
-  border-radius: 0 0 56rpx 56rpx;
+  background: $gradient-primary;
+  border-radius: 0 0 $radius-xl $radius-xl;
   padding-bottom: 34rpx;
 
   .header-decor {
@@ -239,7 +265,7 @@ onShow(() => fetchList());
   }
 
   .paw-1 {
-    top: 120rpx;
+    top: 140rpx;
     right: -16rpx;
     transform: rotate(20deg);
   }
@@ -249,58 +275,6 @@ onShow(() => fetchList());
     left: -10rpx;
     font-size: 90rpx;
     transform: rotate(-12deg);
-  }
-}
-
-.custom-nav {
-  position: relative;
-  z-index: 2;
-
-  .nav-content {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 88rpx;
-    padding: 4rpx 24rpx;
-  }
-
-  .nav-back {
-    position: absolute;
-    left: 12rpx;
-    width: 64rpx;
-    height: 64rpx;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:active {
-      opacity: 0.65;
-    }
-  }
-
-  .nav-title {
-    font-size: $font-xl;
-    font-weight: $font-weight-bold;
-    color: $text-white;
-  }
-
-  .nav-add {
-    position: absolute;
-    right: 12rpx;
-    width: 64rpx;
-    height: 64rpx;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:active {
-      transform: scale(0.9);
-    }
   }
 }
 
@@ -330,6 +304,12 @@ onShow(() => fetchList());
     }
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+  }
+
   .header-count {
     display: flex;
     flex-direction: column;
@@ -352,6 +332,23 @@ onShow(() => fetchList());
       margin-top: 4rpx;
       font-size: $font-xs;
       color: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  /* 添加爱宠：放在头部右侧，避开微信胶囊按钮区域 */
+  .add-fab {
+    flex-shrink: 0;
+    width: 84rpx;
+    height: 84rpx;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.28);
+    border: 2rpx solid rgba(255, 255, 255, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      transform: scale(0.92);
     }
   }
 }
@@ -591,10 +588,6 @@ onShow(() => fetchList());
     background: $gradient-card;
     box-shadow: $shadow-md;
     animation: pet-float 3s ease-in-out infinite;
-
-    .empty-emoji {
-      font-size: 100rpx;
-    }
   }
 
   .empty-title {

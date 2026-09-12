@@ -1,6 +1,7 @@
 package com.ruoyi.system.domain;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Date;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -36,12 +37,20 @@ public class PetVaccine implements Serializable
     /** 接种日期 */
     @ApiModelProperty("接种日期")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date inoculationDate;
+    /**
+     * 数据库列为 DATE 类型，使用 LocalDate 而非 java.util.Date：
+     * java.util.Date 是时间点，JDBC 会按连接时区做换算，跨时区时会整体偏移一天。
+     */
+    private LocalDate inoculationDate;
 
     /** 下次接种日期 */
     @ApiModelProperty("下次接种日期")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date nextDate;
+    /**
+     * 数据库列为 DATE 类型，使用 LocalDate 而非 java.util.Date：
+     * java.util.Date 是时间点，JDBC 会按连接时区做换算，跨时区时会整体偏移一天。
+     */
+    private LocalDate nextDate;
 
     /** 创建时间 */
     @ApiModelProperty("创建时间")

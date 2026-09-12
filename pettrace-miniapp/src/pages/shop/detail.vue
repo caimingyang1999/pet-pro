@@ -54,12 +54,15 @@
           @error="onCoverError"
         />
         <view v-else class="image-placeholder">
-          <text class="placeholder-icon">📦</text>
+          <Icon class="placeholder-icon" name="order" :size="48" color="#FFC8A2" />
         </view>
       </view>
 
       <!-- 商品信息卡片 -->
       <view class="info-card">
+        <!-- 演示模式提示：兑换不会真实发货 -->
+        <DemoNotice v-if="isShopDemo()" class="detail-demo-tip" :text="SHOP_DEMO.detail" />
+
         <!-- 名称 + 状态 -->
         <view class="name-row">
           <text class="product-name">{{ product.productName }}</text>
@@ -70,7 +73,7 @@
         <!-- 价格 -->
         <view class="price-section">
           <view class="price-main">
-            <text class="price-coin">🪙</text>
+            <Icon class="price-coin" name="wallet" :size="14" color="#FF8C42" />
             <text class="points-num">{{ product.pointsPrice }}</text>
             <text class="points-unit">积分</text>
             <view class="price-paw">🐾</view>
@@ -109,9 +112,8 @@
           <text class="section-title">兑换须知</text>
         </view>
         <view class="tips-list">
-          <text class="tip-item">· 兑换成功后，管理员将在 1-3 个工作日内发货</text>
-          <text class="tip-item">· 可在「我的 → 兑换订单」中查看物流信息</text>
-          <text class="tip-item">· 积分一经扣除不予退还，请确认后再兑换</text>
+          <!-- 演示模式下替换掉"1-3 个工作日发货"这类承诺文案 -->
+          <text v-for="tip in exchangeTips" :key="tip" class="tip-item">{{ tip }}</text>
         </view>
       </view>
 
@@ -148,7 +150,7 @@
       <view class="picker-panel" @click.stop>
         <view class="panel-header">
           <text class="panel-title">选择收货地址</text>
-          <u-icon name="close" color="#999" size="18" @click="closePicker" />
+          <Icon name="close" color="#999" size="18" @click="closePicker" />
         </view>
 
         <scroll-view scroll-y class="addr-scroll" :show-scrollbar="false">
@@ -183,18 +185,24 @@
           <view class="manage-btn" @click="goAddressManage">管理地址</view>
           <view class="confirm-btn" @click="confirmExchange">确认兑换</view>
         </view>
+        <!-- 演示模式：兑换前再次说明，避免用户误以为会真实发货 -->
+        <text v-if="isShopDemo()" class="panel-demo-tip">{{ SHOP_DEMO.banner }}</text>
       </view>
     </view>
   </view>
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import EmptyState from '@/components/EmptyState.vue';
+import DemoNotice from '@/components/DemoNotice.vue';
 import { getProductDetail, createOrder } from '@/api/shop.js';
 import { getAddressList } from '@/api/user.js';
-import { showToast, showLoading, hideLoading, checkLogin, fullImageUrl } from '@/utils/index.js';
+import { showToast, showLoading, hideLoading, fullImageUrl } from '@/utils/index.js';
+import { requireLogin } from '@/utils/auth.js';
+import { isShopDemo, SHOP_DEMO } from '@/config/shopDemo.js';
 
 const product = ref(null);
 const productId = ref('');
@@ -252,6 +260,17 @@ const canExchange = computed(() => {
   return product.value?.status === '1' && product.value?.stock > 0;
 });
 
+// ---- 兑换须知：演示模式下换成中性说明，避免出现"发货/物流"承诺 ----
+const exchangeTips = computed(() =>
+  isShopDemo()
+    ? SHOP_DEMO.tips
+    : [
+        '· 兑换成功后，管理员将在 1-3 个工作日内发货',
+        '· 可在「我的 → 兑换订单」中查看物流信息',
+        '· 积分一经扣除不予退还，请确认后再兑换',
+      ]
+);
+
 const exchangeBtnText = computed(() => {
   if (product.value?.status === '0') return '已下架';
   if (product.value?.stock === 0) return '已售罄';
@@ -300,8 +319,8 @@ const maskPhone = (phone) => {
 // ---- 兑换操作 ----
 const handleExchange = async () => {
   if (!canExchange.value) return;
-  // 检查登录
-  if (!checkLogin()) return;
+  // 游客可浏览商品详情，兑换需登录（由用户自行选择是否登录）
+  if (!(await requireLogin('兑换商品'))) return;
 
   showLoading('获取地址中...');
   try {
@@ -345,11 +364,31 @@ const goAddressManage = () => {
   uni.navigateTo({ url: '/pages/mine/address' });
 };
 
+/**
+ * 演示模式二次确认：明确告知不会真实发货，由用户自行决定是否继续
+ * @returns {Promise<boolean>} 是否继续兑换
+ */
+const confirmDemoNotice = () => {
+  return new Promise((resolve) => {
+    uni.showModal({
+      title: SHOP_DEMO.exchange.title,
+      content: SHOP_DEMO.exchange.content,
+      confirmText: SHOP_DEMO.exchange.confirmText,
+      cancelText: SHOP_DEMO.exchange.cancelText,
+      confirmColor: '#FF8C42',
+      success: (res) => resolve(!!res.confirm),
+      fail: () => resolve(false),
+    });
+  });
+};
+
 const confirmExchange = async () => {
   if (!selectedAddressId.value) {
     showToast('请选择收货地址');
     return;
   }
+  // 演示模式：下单前再确认一次，避免用户误以为会收到实物
+  if (isShopDemo() && !(await confirmDemoNotice())) return;
 
   closePicker();
   showLoading('兑换中...');
@@ -361,9 +400,12 @@ const confirmExchange = async () => {
     });
     // 刷新商品数据（库存、兑换数）
     fetchDetail(productId.value);
+    const success = isShopDemo()
+      ? SHOP_DEMO.success
+      : { title: '兑换成功', content: '可在「我的 → 兑换订单」中查看订单及物流信息' };
     uni.showModal({
-      title: '兑换成功',
-      content: '可在「我的 → 兑换订单」中查看订单及物流信息',
+      title: success.title,
+      content: success.content,
       confirmText: '查看订单',
       cancelText: '继续逛逛',
       success: (modalRes) => {
@@ -486,6 +528,11 @@ onMounted(() => {
   border-radius: $radius-lg;
   padding: 32rpx;
   box-shadow: $shadow-card;
+
+  /* 演示模式提示条：与下方名称行留出间距 */
+  .detail-demo-tip {
+    margin-bottom: 24rpx;
+  }
 
   .name-row {
     display: flex;
@@ -934,6 +981,16 @@ onMounted(() => {
       &:active {
         opacity: 0.9;
       }
+    }
+
+    /* 演示模式：地址弹层底部的补充说明 */
+    .panel-demo-tip {
+      display: block;
+      margin-top: 18rpx;
+      font-size: 22rpx;
+      color: $text-hint;
+      line-height: 1.6;
+      text-align: center;
     }
   }
 }

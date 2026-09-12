@@ -1,6 +1,7 @@
 package com.ruoyi.system.domain;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Date;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -29,10 +30,18 @@ public class UserSignIn implements Serializable
     @ApiModelProperty("用户ID")
     private Long userId;
 
-    /** 签到日期 */
+    /**
+     * 签到日期
+     *
+     * 数据库列类型为 DATE，这里必须用 LocalDate 而非 java.util.Date：
+     * java.util.Date 是"时间点"，JDBC 会按连接时区（serverTimezone）做换算，
+     * 零点会被换算成前一天 16:00（东八区 vs UTC），写入 DATE 列后被截断成前一天，
+     * 而查询时的等值比较又带上了时分秒，导致"插入成功但查不到、再点就主键冲突"。
+     * LocalDate 按纯日期绑定，没有任何时区换算，与 DATE 列语义一致。
+     */
     @ApiModelProperty("签到日期")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date signDate;
+    private LocalDate signDate;
 
     /** 签到奖励积分 */
     @ApiModelProperty("签到奖励积分")

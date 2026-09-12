@@ -12,12 +12,12 @@
       />
       <!-- 无图 / 加载失败兜底 -->
       <view v-else class="image-placeholder">
-        <text class="placeholder-icon">🎁</text>
+        <Icon class="placeholder-icon" name="gift" :size="34" color="#FFC8A2" />
       </view>
 
       <!-- 热兑角标 -->
       <view v-if="product.stock > 0 && product.totalExchange >= 100" class="hot-tag">
-        <text class="hot-tag-text">🔥 热兑</text>
+        <Icon name="fire" :size="11" color="#fff" /><text class="hot-tag-text">热兑</text>
       </view>
 
       <!-- 库存状态 -->
@@ -37,7 +37,7 @@
       </view>
       <view class="bottom-row">
         <view class="price">
-          <text class="coin">🪙</text>
+          <Icon class="coin" name="wallet" :size="13" color="#FF8C42" />
           <text class="points">{{ product.pointsPrice }}</text>
           <text class="unit">积分</text>
         </view>
@@ -50,6 +50,7 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, computed, watch } from 'vue';
 import { fullImageUrl } from '@/utils/index.js';
 
@@ -152,6 +153,9 @@ const handleClick = () => emit('click', props.product.id);
     position: absolute;
     top: 0;
     left: 0;
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
     background: $gradient-primary;
     padding: 8rpx 18rpx;
     border-radius: 0 0 20rpx 0;

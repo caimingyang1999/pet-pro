@@ -7,11 +7,6 @@
       <text class="bg-paw paw-3">🐾</text>
     </view>
 
-    <!-- 返回按钮 -->
-    <view class="nav-back pet-press" @click="goBack">
-      <u-icon name="arrow-left" color="#fff" size="20" />
-    </view>
-
     <!-- ========== 入口视图 ========== -->
     <view v-if="!showForm" class="login-entry">
       <!-- 品牌 Logo -->
@@ -27,20 +22,53 @@
       </view>
 
       <view class="login-actions">
+        <!--
+          手机号快捷登录：依赖微信「获取手机号」能力，个人主体小程序不支持，
+          点击会返回「未开通获取手机号权限」错误，故上线期间隐藏。
+          后续升级为企业主体后，取消下方注释即可恢复。
+        -->
+        <!--
         <button
+          v-if="agreed"
           class="primary-btn pet-press"
           open-type="getPhoneNumber"
           @getphonenumber="handleWxPhoneLogin"
         >
           <view class="btn-icon-wrap">
-            <u-icon name="weixin-fill" color="#fff" size="20" />
+            <Icon name="phone" color="#fff" size="20" />
           </view>
-          <text>微信手机号登录</text>
+          <text>手机号快捷登录</text>
         </button>
+        <view v-else class="primary-btn pet-press" @click="remindAgreement">
+          <view class="btn-icon-wrap">
+            <Icon name="phone" color="#fff" size="20" />
+          </view>
+          <text>手机号快捷登录</text>
+        </view>
+        -->
 
-        <view class="secondary-btn pet-press" @click="showForm = true">
+        <!-- 主按钮：账号密码登录（当前唯一可用登录方式，协议勾选移至表单页） -->
+        <view class="primary-btn pet-press" @click="showForm = true">
+          <view class="btn-icon-wrap">
+            <Icon name="user" color="#fff" size="20" />
+          </view>
           <text>账号密码登录</text>
         </view>
+
+        <!-- 协议勾选：随「提交登录」动作一起移到表单页，此处不再展示 -->
+        <!--
+        <view class="agreement-row">
+          <view class="checkbox" :class="{ checked: agreed }" @click="toggleAgreement">
+            <Icon v-if="agreed" name="check" color="#fff" size="12" />
+          </view>
+          <view class="agreement-text">
+            <text>我已阅读并同意</text>
+            <text class="link" @click.stop="goAgreement">《用户协议》</text>
+            <text>与</text>
+            <text class="link" @click.stop="goPrivacy">《隐私政策》</text>
+          </view>
+        </view>
+        -->
 
         <!-- 分隔线 -->
         <view class="divider-row">
@@ -52,13 +80,6 @@
         <view class="register-link pet-press" @click="goRegister">
           <text>注册新账号</text>
         </view>
-      </view>
-
-      <view class="agreement-tips">
-        <text>登录即表示同意</text>
-        <text class="link" @click="goAgreement">《用户协议》</text>
-        <text>和</text>
-        <text class="link" @click="goPrivacy">《隐私政策》</text>
       </view>
     </view>
 
@@ -75,7 +96,7 @@
       <view class="form-wrap">
         <view class="input-group">
           <view class="input-icon">
-            <text>👤</text>
+            <Icon name="user" color="#FF8C42" size="18" />
           </view>
           <input
             v-model="form.username"
@@ -88,7 +109,7 @@
 
         <view class="input-group">
           <view class="input-icon">
-            <text>🔒</text>
+            <Icon name="locked" color="#FF8C42" size="18" />
           </view>
           <input
             v-model="form.password"
@@ -98,12 +119,26 @@
             placeholder-class="input-placeholder"
           />
           <view class="eye-icon" :class="{ open: showPassword }" @click="showPassword = !showPassword">
-            <u-icon :name="showPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
+            <Icon :name="showPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
           </view>
         </view>
 
-        <view class="forgot-wrap" @click="goForgot">
+        <!-- 忘记密码：暂未实现，上线提审期间先隐藏，避免点击后提示"功能开发中" -->
+        <!-- <view class="forgot-wrap" @click="goForgot">
           <text class="forgot-text">忘记密码？</text>
+        </view> -->
+
+        <!-- 协议勾选：随「提交登录」动作一起（原在入口页，手机号登录隐藏后移到表单页） -->
+        <view class="agreement-row">
+          <view class="checkbox" :class="{ checked: agreed }" @click="toggleAgreement">
+            <Icon v-if="agreed" name="check" color="#fff" size="12" />
+          </view>
+          <view class="agreement-text">
+            <text>我已阅读并同意</text>
+            <text class="link" @click.stop="goAgreement">《用户协议》</text>
+            <text>与</text>
+            <text class="link" @click.stop="goPrivacy">《隐私政策》</text>
+          </view>
         </view>
 
         <view class="submit-btn pet-press" :class="{ loading }" @click="handleLogin">
@@ -118,7 +153,8 @@
         <text class="link" @click="goRegister">立即注册</text>
       </view>
 
-      <!-- 其他登录方式 -->
+      <!-- 其他登录方式：手机号快捷登录（个人主体不支持获取手机号，暂隐藏） -->
+      <!--
       <view class="other-login">
         <view class="other-divider">
           <view class="line" />
@@ -126,24 +162,31 @@
           <view class="line" />
         </view>
         <view class="other-icons">
-          <view class="wx-circle pet-press" @click="showForm = false">
-            <u-icon name="weixin-fill" color="#fff" size="22" />
+          <view class="phone-circle pet-press" @click="backToEntry">
+            <Icon name="phone" color="#fff" size="26" />
           </view>
         </view>
-        <text class="other-tip">微信登录将直接使用手机号授权</text>
+        <text class="other-tip">使用手机号快捷登录，无需记忆密码</text>
       </view>
-    </view>
+      -->    </view>
   </view>
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, reactive } from 'vue';
+import { onShow, onUnload } from '@dcloudio/uni-app';
 import { useUserStore } from '@/store/user.js';
 import { showToast, showLoading, hideLoading } from '@/utils/index.js';
+import { goUserAgreement, goPrivacyPolicy } from '@/utils/auth.js';
+import { hasPendingRequests, releasePendingRequests } from '@/utils/session.js';
 
 const userStore = useUserStore();
 
 const showForm = ref(false);
+
+/** 是否已勾选同意《用户协议》与《隐私政策》 */
+const agreed = ref(false);
 
 const form = reactive({
   username: '',
@@ -153,17 +196,61 @@ const form = reactive({
 const showPassword = ref(false);
 const loading = ref(false);
 
-const goBack = () => {
-  if (showForm.value) {
-    showForm.value = false;
-  } else {
-    uni.navigateBack();
-  }
+/** 切换到账号密码表单视图 */
+const backToEntry = () => {
+  showForm.value = false;
+};
+
+/** 切换协议勾选状态 */
+const toggleAgreement = () => {
+  agreed.value = !agreed.value;
+};
+
+/** 未勾选协议时点击登录按钮的提示 */
+const remindAgreement = () => {
+  showToast('请先阅读并勾选同意《用户协议》和《隐私政策》');
+};
+
+/**
+ * 登录成功后的统一收尾
+ *
+ * 若本次是被"登录状态已过期"引导过来的（存在因 401 而挂起的请求），
+ * 则原路返回上一页，并释放挂起请求让它们自动重放，用户可继续刚才被打断的操作；
+ * 否则维持原有行为：回到首页。
+ */
+let finishing = false;
+const finishLogin = () => {
+  if (finishing) return;
+  finishing = true;
+
+  const backToPrevious = hasPendingRequests();
+  releasePendingRequests(true);
+  showToast('登录成功', 'success');
+
+  setTimeout(() => {
+    if (backToPrevious) {
+      uni.navigateBack({
+        delta: 1,
+        fail: () => {
+          // 页面栈异常等场景兜底，避免停留在登录页无响应
+          uni.switchTab({ url: '/pages/index/index' });
+        },
+      });
+    } else {
+      uni.switchTab({ url: '/pages/index/index' });
+    }
+  }, 1000);
 };
 
 const handleLogin = async () => {
   if (!form.username.trim() || !form.password.trim()) {
     showToast('请填写完整信息');
+    return;
+  }
+
+  // 协议前置校验：未勾选同意《用户协议》《隐私政策》不提交登录
+  if (!agreed.value) {
+    remindAgreement();
     return;
   }
 
@@ -173,10 +260,7 @@ const handleLogin = async () => {
       username: form.username.trim(),
       password: form.password
     });
-    showToast('登录成功', 'success');
-    setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' });
-    }, 1000);
+    finishLogin();
   } catch (err) {
     console.error('[登录失败]', err);
     showToast(err?.msg || err?.message || '账号或密码错误');
@@ -186,6 +270,12 @@ const handleLogin = async () => {
 };
 
 const handleWxPhoneLogin = async (e) => {
+  // 协议前置校验：未勾选时终止后续流程
+  if (!agreed.value) {
+    remindAgreement();
+    return;
+  }
+
   const detail = e.detail || {};
   console.log('[getPhoneNumber返回]', detail);
   const errMsg = detail.errMsg || '';
@@ -215,12 +305,9 @@ const handleWxPhoneLogin = async (e) => {
       code,
       phoneCode,
     });
-    showToast('登录成功', 'success');
-    setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' });
-    }, 1000);
+    finishLogin();
   } catch (err) {
-    console.error('[微信登录失败]', err);
+    console.error('[手机号快捷登录失败]', err);
     showToast(err?.msg || err?.message || '登录失败');
   } finally {
     hideLoading();
@@ -231,17 +318,36 @@ const goForgot = () => {
   showToast('功能开发中');
 };
 
+/** 查看《用户协议》 */
 const goAgreement = () => {
-  showToast('用户协议开发中');
+  goUserAgreement();
 };
 
+/** 查看《隐私政策》 */
 const goPrivacy = () => {
-  showToast('隐私政策开发中');
+  goPrivacyPolicy();
 };
 
 const goRegister = () => {
   uni.navigateTo({ url: '/pages/login/register' });
 };
+
+/**
+ * 从注册页返回时补收尾
+ * 走注册流程完成登录后回到本页，此时同样需要继续被打断的操作
+ */
+onShow(() => {
+  if (userStore.isLogin && hasPendingRequests()) {
+    finishLogin();
+  }
+});
+
+/** 用户未登录就返回上一页：释放挂起请求，让原页面按游客态继续 */
+onUnload(() => {
+  if (!userStore.isLogin && hasPendingRequests()) {
+    releasePendingRequests(false);
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -287,40 +393,25 @@ const goRegister = () => {
   }
 }
 
-.nav-back {
-  position: absolute;
-  top: calc(var(--status-bar-height) + 20rpx);
-  left: 24rpx;
-  width: 68rpx;
-  height: 68rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.56);
-  border: 1rpx solid rgba(255, 140, 66, 0.16);
-  backdrop-filter: blur(10rpx);
-  -webkit-backdrop-filter: blur(10rpx);
-}
-
 /* ========== 入口视图 ========== */
+/* 内容整体居中且不超出视口，避免出现页面滚动条 */
 .login-entry {
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 170rpx 64rpx 50rpx;
+  padding: 60rpx 64rpx 48rpx;
 }
 
 .brand-zone {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 96rpx;
+  margin-bottom: 48rpx;
 
   .logo-paw-wrap {
     width: 220rpx;
@@ -380,7 +471,7 @@ const goRegister = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 26rpx;
+  gap: 22rpx;
 }
 
 .primary-btn {
@@ -429,6 +520,7 @@ const goRegister = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 12rpx;
   font-size: $font-lg;
   font-weight: $font-weight-medium;
   box-shadow: $shadow-sm;
@@ -468,17 +560,42 @@ const goRegister = () => {
   }
 }
 
-.agreement-tips {
-  position: absolute;
-  bottom: 36rpx;
-  text-align: center;
-  font-size: $font-xs;
-  color: $text-hint;
-  line-height: 1.7;
+.agreement-row {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 4rpx;
+  padding: 0 4rpx;
 
-  .link {
-    color: $primary;
-    text-decoration: underline;
+  .checkbox {
+    width: 34rpx;
+    height: 34rpx;
+    border-radius: 50%;
+    border: 2rpx solid rgba(255, 140, 66, 0.55);
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin: 4rpx 12rpx 0 0;
+    transition: all 0.2s ease;
+
+    &.checked {
+      background: $gradient-primary;
+      border-color: transparent;
+    }
+  }
+
+  .agreement-text {
+    flex: 1;
+    font-size: $font-xs;
+    color: $text-hint;
+    line-height: 1.6;
+
+    .link {
+      color: $primary;
+      text-decoration: underline;
+    }
   }
 }
 
@@ -488,7 +605,7 @@ const goRegister = () => {
   z-index: 2;
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 150rpx 56rpx 60rpx;
+  padding: 64rpx 56rpx 48rpx;
   display: flex;
   flex-direction: column;
 }
@@ -558,10 +675,7 @@ const goRegister = () => {
     display: flex;
     align-items: center;
     justify-content: center;
-
-    text {
-      font-size: 30rpx;
-    }
+    flex-shrink: 0;
   }
 
   .form-input {
@@ -680,15 +794,15 @@ const goRegister = () => {
     margin-top: 28rpx;
   }
 
-  .wx-circle {
+  .phone-circle {
     width: 96rpx;
     height: 96rpx;
     border-radius: 50%;
-    background: linear-gradient(135deg, #5FC967 0%, #39B54A 100%);
+    background: $gradient-primary;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8rpx 24rpx rgba(57, 181, 74, 0.32);
+    box-shadow: $shadow-primary;
 
     &:active {
       transform: scale(0.9);

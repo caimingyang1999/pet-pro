@@ -6,7 +6,7 @@
     </div>
     <div class="product-list">
       <div
-        v-for="item in productsData"
+        v-for="item in products"
         :key="item.rank"
         class="product-item"
       >
@@ -17,7 +17,8 @@
           {{ item.rank }}
         </div>
         <div class="product-image">
-          <i class="el-icon-goods"></i>
+          <img v-if="item.image" :src="resolveImage(item.image)" class="product-img" alt="" />
+          <i v-else class="el-icon-goods"></i>
         </div>
         <div class="product-info">
           <div class="product-name">{{ item.name }}</div>
@@ -34,16 +35,22 @@
 </template>
 
 <script>
-import { hotProductsData } from './mock'
-
 export default {
   name: 'HotProducts',
-  data() {
-    return {
-      productsData: hotProductsData
+  props: {
+    // 热门商品数据，由父级统一拉取后下发
+    products: {
+      type: Array,
+      default: () => []
     }
   },
   methods: {
+    // 商品图可能是完整外链，也可能是后端相对路径（需拼网关前缀）
+    resolveImage(url) {
+      if (!url) return ''
+      if (/^https?:\/\//.test(url)) return url
+      return process.env.VUE_APP_BASE_API + url
+    },
     handleMore() {
       this.$message.info('跳转到商品列表页面')
     }
@@ -137,6 +144,13 @@ export default {
         i {
           font-size: 22px;
           color: #9ca3af;
+        }
+
+        .product-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 10px;
         }
       }
 

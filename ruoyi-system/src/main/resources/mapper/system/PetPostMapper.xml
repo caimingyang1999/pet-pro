@@ -26,6 +26,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isFollowed"    column="is_followed"    />
     </resultMap>
 
+    <!--
+        基础字段片段：仅关联用户/宠物信息，不依赖 currentUserId。
+        供管理端等“无登录态/无点赞回显需求”的查询复用（如 selectPostListAdmin）。
+    -->
+    <sql id="selectPostBaseVo">
+        select p.id, p.user_id, p.pet_id, p.content, p.images, p.video_url, p.video_cover, p.status,
+               p.like_count, p.comment_count, p.view_count, p.del_flag,
+               p.create_time, p.update_time,
+               u.nick_name as user_name, u.avatar as user_avatar,
+               pi.name as pet_name,
+               false as is_like,
+               false as is_followed
+        from pet_post p
+        left join sys_user u on p.user_id = u.user_id
+        left join pet_info pi on p.pet_id = pi.id
+    </sql>
+
+    <!--
+        用户端字段片段：在基础字段之上回显“当前用户是否点赞/是否关注”。
+        使用该方法片段的方法必须提供 currentUserId 参数（允许为 null，为 null 时点赞/关注状态统一为 false）。
+    -->
     <sql id="selectPostVo">
         select p.id, p.user_id, p.pet_id, p.content, p.images, p.video_url, p.video_cover, p.status,
                p.like_count, p.comment_count, p.view_count, p.del_flag,
@@ -37,12 +58,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from pet_post p
         left join sys_user u on p.user_id = u.user_id
         left join pet_info pi on p.pet_id = pi.id
-        <if test="currentUserId != null">
-            left join post_like pl on pl.post_id = p.id and pl.user_id = #{currentUserId}
-            left join user_follow uf on uf.follower_id = #{currentUserId}
-                                     and uf.followee_id = p.user_id
-                                     and uf.del_flag = '0'
-        </if>
+        left join post_like pl on pl.post_id = p.id and pl.user_id = #{currentUserId,jdbcType=BIGINT}
+        left join user_follow uf on uf.follower_id = #{currentUserId,jdbcType=BIGINT}
+                                 and uf.followee_id = p.user_id
+                                 and uf.del_flag = '0'
     </sql>
 
     <!-- 通用动态列表（支持 tab 切换、关注过滤、点赞状态回显） -->
@@ -92,13 +111,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </choose>
     </select>
 
-    <!-- 管理端-动态列表 -->
+    <!-- 管理端-动态列表（无登录态，使用不含点赞/关注回显的基础字段片段） -->
     <select id="selectPostListAdmin" resultMap="PetPostResult">
-        <include refid="selectPostVo"/>
+        <include refid="selectPostBaseVo"/>
         <where>
             p.del_flag = '0'
             <if test="status != null and status != ''">
                 and p.status = #{status}
+            </if>
+            <if test="userId != null">
+                and p.user_id = #{userId}
             </if>
             <if test="beginTime != null">
                 and p.create_time >= #{beginTime}

@@ -1,7 +1,7 @@
 {
     "name" : "宠迹",
     "appid" : "__UNI__PETTRACE",
-    "description" : "宠物社区小程序 - 记录爱宠的每一个足迹",
+    "description" : "宠物健康管理工具 - 记录爱宠档案、疫苗、体重与成长点滴",
     "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
@@ -56,12 +56,7 @@
             "showShadowRootInWkwebview" : true,
             "uglifyFileName" : false
         },
-        "usingComponents" : true,
-        "permission" : {
-            "scope.userLocation" : {
-                "desc" : "你的位置信息将用于小程序位置接口的效果展示"
-            }
-        }
+        "usingComponents" : true
     },
     "mp-alipay" : {
         "usingComponents" : true

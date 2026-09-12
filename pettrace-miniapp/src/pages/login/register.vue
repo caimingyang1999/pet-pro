@@ -8,7 +8,7 @@
 
     <!-- 返回按钮 -->
     <view class="nav-back pet-press" @click="goBack">
-      <u-icon name="arrow-left" color="#fff" size="20" />
+      <Icon name="back" color="#F06E2D" size="20" />
     </view>
 
     <view class="register-content">
@@ -24,7 +24,7 @@
       <!-- 表单 -->
       <view class="form-wrap">
         <view class="input-group">
-          <view class="input-icon"><text>📱</text></view>
+          <view class="input-icon"><Icon name="phone" color="#FF8C42" size="18" /></view>
           <input
             v-model="form.phone"
             class="form-input"
@@ -36,7 +36,7 @@
         </view>
 
         <view class="input-group">
-          <view class="input-icon"><text>🔒</text></view>
+          <view class="input-icon"><Icon name="locked" color="#FF8C42" size="18" /></view>
           <input
             v-model="form.password"
             class="form-input"
@@ -45,12 +45,12 @@
             placeholder-class="input-placeholder"
           />
           <view class="eye-icon" :class="{ open: showPassword }" @click="showPassword = !showPassword">
-            <u-icon :name="showPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
+            <Icon :name="showPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
           </view>
         </view>
 
         <view class="input-group">
-          <view class="input-icon"><text>🔐</text></view>
+          <view class="input-icon"><Icon name="locked" color="#FF8C42" size="18" /></view>
           <input
             v-model="form.confirmPassword"
             class="form-input"
@@ -59,12 +59,12 @@
             placeholder-class="input-placeholder"
           />
           <view class="eye-icon" :class="{ open: showConfirmPassword }" @click="showConfirmPassword = !showConfirmPassword">
-            <u-icon :name="showConfirmPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
+            <Icon :name="showConfirmPassword ? 'eye-off' : 'eye'" color="#FF8C42" size="18" />
           </view>
         </view>
 
         <view class="input-group">
-          <view class="input-icon"><text>🧸</text></view>
+          <view class="input-icon"><Icon name="user" color="#FF8C42" size="18" /></view>
           <input
             v-model="form.nickname"
             class="form-input"
@@ -81,8 +81,13 @@
         </view>
       </view>
 
-      <!-- 其他注册方式 -->
+      <!--
+        其他注册方式（手机号快捷注册）：依赖微信「获取手机号」能力，
+        个人主体小程序不支持，点击会报「未开通获取手机号权限」，上线期间隐藏。
+        升级为企业主体后取消下方注释即可恢复；表单注册与协议勾选不受影响。
+      -->
       <view class="other-login">
+        <!--
         <view class="divider-wrap">
           <view class="divider-line" />
           <text class="divider-text">其他方式</text>
@@ -90,15 +95,36 @@
         </view>
 
         <button
-          class="wx-btn-plain pet-press"
+          v-if="agreed"
+          class="quick-btn-plain pet-press"
           open-type="getPhoneNumber"
           @getphonenumber="handleWxPhoneLogin"
         >
-          <view class="wx-icon-circle">
-            <u-icon name="weixin-fill" color="#fff" size="20" />
+          <view class="quick-icon-circle">
+            <Icon name="phone" color="#fff" size="22" />
           </view>
-          <text>微信手机号一键注册 / 登录</text>
+          <text>手机号快捷注册 / 登录</text>
         </button>
+        <view v-else class="quick-btn-plain pet-press" @click="remindAgreement">
+          <view class="quick-icon-circle">
+            <Icon name="phone" color="#fff" size="22" />
+          </view>
+          <text>手机号快捷注册 / 登录</text>
+        </view>
+        -->
+
+        <!-- 协议勾选：注册前必须由用户主动勾选 -->
+        <view class="agreement-row">
+          <view class="checkbox" :class="{ checked: agreed }" @click="toggleAgreement">
+            <Icon v-if="agreed" name="check" color="#fff" size="12" />
+          </view>
+          <view class="agreement-text">
+            <text>我已阅读并同意</text>
+            <text class="link" @click.stop="goAgreement">《用户协议》</text>
+            <text>与</text>
+            <text class="link" @click.stop="goPrivacy">《隐私政策》</text>
+          </view>
+        </view>
       </view>
 
       <!-- 登录入口 -->
@@ -111,9 +137,11 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, reactive } from 'vue';
 import { useUserStore } from '@/store/user.js';
 import { showToast, showLoading, hideLoading } from '@/utils/index.js';
+import { goUserAgreement, goPrivacyPolicy } from '@/utils/auth.js';
 
 const userStore = useUserStore();
 
@@ -128,6 +156,29 @@ const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const loading = ref(false);
 
+/** 是否已勾选同意《用户协议》与《隐私政策》 */
+const agreed = ref(false);
+
+/** 切换协议勾选状态 */
+const toggleAgreement = () => {
+  agreed.value = !agreed.value;
+};
+
+/** 未勾选协议时的提示 */
+const remindAgreement = () => {
+  showToast('请先阅读并勾选同意《用户协议》和《隐私政策》');
+};
+
+/** 查看《用户协议》 */
+const goAgreement = () => {
+  goUserAgreement();
+};
+
+/** 查看《隐私政策》 */
+const goPrivacy = () => {
+  goPrivacyPolicy();
+};
+
 const goBack = () => {
   uni.navigateBack();
 };
@@ -137,6 +188,11 @@ const validatePhone = (phone) => {
 };
 
 const handleRegister = async () => {
+  if (!agreed.value) {
+    remindAgreement();
+    return;
+  }
+
   if (!form.phone.trim() || !form.password || !form.confirmPassword) {
     showToast('请填写完整信息');
     return;
@@ -188,6 +244,12 @@ const handleRegister = async () => {
 };
 
 const handleWxPhoneLogin = async (e) => {
+  // 协议前置校验：未勾选时终止后续流程
+  if (!agreed.value) {
+    remindAgreement();
+    return;
+  }
+
   const detail = e.detail || {};
   console.log('[getPhoneNumber返回]', detail);
   const errMsg = detail.errMsg || '';
@@ -222,7 +284,7 @@ const handleWxPhoneLogin = async (e) => {
       uni.navigateBack();
     }, 1000);
   } catch (err) {
-    console.error('[微信登录失败]', err);
+    console.error('[手机号快捷登录失败]', err);
     showToast(err?.msg || err?.message || '登录失败');
   } finally {
     hideLoading();
@@ -360,10 +422,6 @@ const goLogin = () => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-
-    text {
-      font-size: 30rpx;
-    }
   }
 
   .form-input {
@@ -449,7 +507,7 @@ const goLogin = () => {
     padding: 0 20rpx;
   }
 
-  .wx-btn-plain {
+  .quick-btn-plain {
     width: 100%;
     height: 96rpx;
     background: rgba(255, 255, 255, 0.9);
@@ -473,15 +531,54 @@ const goLogin = () => {
       transform: scale(0.96);
     }
 
-    .wx-icon-circle {
+    .quick-icon-circle {
       width: 52rpx;
       height: 52rpx;
       border-radius: 50%;
-      background: linear-gradient(135deg, #5FC967 0%, #39B54A 100%);
+      background: $gradient-primary;
       display: flex;
       align-items: center;
       justify-content: center;
       margin-right: 14rpx;
+    }
+  }
+
+  /* 协议勾选 */
+  .agreement-row {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    margin-top: 24rpx;
+    padding: 0 4rpx;
+
+    .checkbox {
+      width: 34rpx;
+      height: 34rpx;
+      border-radius: 50%;
+      border: 2rpx solid rgba(255, 140, 66, 0.55);
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin: 4rpx 12rpx 0 0;
+
+      &.checked {
+        background: $gradient-primary;
+        border-color: transparent;
+      }
+    }
+
+    .agreement-text {
+      flex: 1;
+      font-size: $font-xs;
+      color: $text-hint;
+      line-height: 1.6;
+
+      .link {
+        color: $primary;
+        text-decoration: underline;
+      }
     }
   }
 }

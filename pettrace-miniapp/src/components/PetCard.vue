@@ -25,16 +25,18 @@
         </text>
       </view>
       <view class="detail-row">
-        <text v-if="pet.weight" class="detail-item">
-          <text class="detail-emoji">⚖️</text>{{ pet.weight }}kg
-        </text>
+        <view v-if="pet.weight" class="detail-item">
+          <Icon class="detail-emoji" name="weight" :size="12" color="#8A8D9A" />
+          <text>{{ pet.weight }}kg</text>
+        </view>
         <text v-if="pet.color" class="detail-item color-chip">{{ pet.color }}</text>
-        <text v-if="ageText" class="detail-item">
-          <text class="detail-emoji">🎂</text>{{ ageText }}
-        </text>
+        <view v-if="ageText" class="detail-item">
+          <Icon class="detail-emoji" name="cake" :size="12" color="#8A8D9A" />
+          <text>{{ ageText }}</text>
+        </view>
       </view>
       <view v-if="pet.vaccineList && pet.vaccineList.length" class="vaccine-hint">
-        <text class="vaccine-emoji">💉</text>
+        <Icon class="vaccine-emoji" name="vaccine" :size="12" color="#4CAF7D" />
         <text class="vaccine-text">{{ pet.vaccineList.length }} 条疫苗记录</text>
       </view>
     </view>
@@ -224,8 +226,15 @@ const handleClick = () => {
       margin-top: 10rpx;
 
       .detail-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
         font-size: $font-xs;
         color: $text-secondary;
+
+        .detail-emoji {
+          flex-shrink: 0;
+        }
       }
 
       .color-chip {

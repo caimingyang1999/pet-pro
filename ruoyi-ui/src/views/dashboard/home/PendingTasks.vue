@@ -5,7 +5,7 @@
     </div>
     <div class="task-list">
       <div
-        v-for="item in tasksData"
+        v-for="item in tasks"
         :key="item.id"
         class="task-item"
         @click="handleClick(item)"
@@ -26,13 +26,13 @@
 </template>
 
 <script>
-import { pendingTasksData } from './mock'
-
 export default {
   name: 'PendingTasks',
-  data() {
-    return {
-      tasksData: pendingTasksData
+  props: {
+    // 待处理事项数据，由父级统一拉取后下发
+    tasks: {
+      type: Array,
+      default: () => []
     }
   },
   methods: {
@@ -40,8 +40,7 @@ export default {
       const iconMap = {
         review: 'el-icon-view',
         ship: 'el-icon-s-promotion',
-        warning: 'el-icon-warning-outline',
-        complaint: 'el-icon-warning'
+        warning: 'el-icon-warning-outline'
       }
       return iconMap[type] || 'el-icon-bell'
     },
@@ -49,8 +48,7 @@ export default {
       const bgMap = {
         '#3b82f6': '#eff6ff',
         '#10b981': '#ecfdf5',
-        '#f97316': '#fff7ed',
-        '#ef4444': '#fef2f2'
+        '#f97316': '#fff7ed'
       }
       return bgMap[color] || '#f3f4f6'
     },

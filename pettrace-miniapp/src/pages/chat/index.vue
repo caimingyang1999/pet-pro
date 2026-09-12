@@ -59,10 +59,10 @@
 
         <!-- 能力介绍 -->
         <view class="ability-row">
-          <view class="ability-chip"><text class="chip-emoji">🍚</text><text>喂养建议</text></view>
-          <view class="ability-chip"><text class="chip-emoji">💉</text><text>疫苗提醒</text></view>
-          <view class="ability-chip"><text class="chip-emoji">🏥</text><text>健康咨询</text></view>
-          <view class="ability-chip"><text class="chip-emoji">🎓</text><text>行为训练</text></view>
+          <view class="ability-chip"><Icon class="chip-emoji" name="list" :size="13" color="#FF8C42" /><text>喂养建议</text></view>
+          <view class="ability-chip"><Icon class="chip-emoji" name="vaccine" :size="13" color="#FF8C42" /><text>疫苗提醒</text></view>
+          <view class="ability-chip"><Icon class="chip-emoji" name="help" :size="13" color="#FF8C42" /><text>健康咨询</text></view>
+          <view class="ability-chip"><Icon class="chip-emoji" name="medal" :size="13" color="#FF8C42" /><text>行为训练</text></view>
         </view>
 
         <!-- 推荐问题标签云 -->
@@ -152,7 +152,7 @@
         :class="{ active: inputText.trim() && !loading, loading: loading }"
         @click="loading ? handleAbort() : sendMessage()"
       >
-        <Icon :name="loading ? 'close' : 'share'" :size="16" color="#fff" />
+        <Icon :name="loading ? 'close' : 'send'" :size="16" color="#fff" />
       </view>
     </view>
   </view>
@@ -166,6 +166,7 @@ import { useUserStore } from '@/store/user.js';
 import { fullImageUrl } from '@/utils/index.js';
 import { chatStream, clearChatHistory, getChatHistory, getSuggestWords } from '@/api/adviser.js';
 import { showToast, showConfirm } from '@/utils/index.js';
+import { requireLogin } from '@/utils/auth.js';
 import { features, fetchFeatures } from '@/config/features.js';
 
 const userStore = useUserStore();
@@ -270,12 +271,8 @@ const sendMessage = async (text) => {
     return;
   }
 
-  // 未登录拦截
-  const token = uni.getStorageSync('token');
-  if (!token) {
-    showToast('请先登录后再提问');
-    return;
-  }
+  // 未登录拦截：弹窗征询用户意愿，由用户自行选择是否登录
+  if (!(await requireLogin('向养宠助手提问'))) return;
 
   // 推入用户消息
   messages.value.push({ role: 'user', content });

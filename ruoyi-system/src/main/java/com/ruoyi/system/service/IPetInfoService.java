@@ -50,4 +50,22 @@ public interface IPetInfoService extends IService<PetInfo>
      * @return 结果
      */
     boolean deletePet(Long petId);
+
+    /**
+     * 后台：查询宠物列表（含所属用户昵称、疫苗记录数）
+     *
+     * @param name        宠物名称（模糊，可选）
+     * @param userKeyword 所属用户（昵称/账号/手机号模糊，可选）
+     * @param breed       品种（模糊，可选）
+     * @param petType     宠物类型（cat-猫 dog-狗 other-其他，精确匹配，可选）
+     * @return 宠物信息集合
+     */
+    List<PetInfo> getAdminPetList(String name, String userKeyword, String breed, String petType);
+
+    /**
+     * 后台：查询品种去重列表（筛选下拉用）
+     *
+     * @return 品种集合
+     */
+    List<String> getBreedOptions();
 }

@@ -49,19 +49,21 @@
     </view>
 
     <view v-if="!loading && !postList.length" class="empty-wrap">
-      <text class="empty-icon">🐾</text>
+      <Icon class="empty-icon" name="pet" :size="58" color="#FFC8A2" />
       <text class="empty-text">该用户还没有发布动态</text>
     </view>
   </view>
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, computed, onMounted } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import PostCard from '@/components/PostCard.vue';
 import { getPostList, likePost } from '@/api/post.js';
 import { getFollowList, getFollowCount, toggleFollow, checkFollowed } from '@/api/follow.js';
 import { fullImageUrl, showToast } from '@/utils/index.js';
+import { requireLogin } from '@/utils/auth.js';
 import { useUserStore } from '@/store/user.js';
 
 const userStore = useUserStore();
@@ -132,6 +134,8 @@ const fetchPosts = async () => {
 };
 
 const handleToggleFollow = async () => {
+  // 关注需登录，由用户自行选择是否登录
+  if (!(await requireLogin('关注 TA'))) return;
   try {
     const res = await toggleFollow(userId.value);
     isFollowed.value = res.data?.followed ?? !isFollowed.value;
@@ -150,6 +154,8 @@ const goFollowList = (type) => {
 };
 
 const handleLike = async (id) => {
+  // 点赞需登录，由用户自行选择是否登录
+  if (!(await requireLogin('点赞'))) return;
   try {
     const res = await likePost(id);
     const post = postList.value.find((p) => p.id === id);

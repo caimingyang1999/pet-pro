@@ -58,7 +58,7 @@ public class AdminPostController extends BaseController
             @ApiParam(name = "endTime", value = "结束时间") @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endTime)
     {
         startPage();
-        List<PetPost> list = postService.getPostListAdmin(status, beginTime, endTime);
+        List<PetPost> list = postService.getPostListAdmin(status, userId, beginTime, endTime);
         return getDataTable(list);
     }
 

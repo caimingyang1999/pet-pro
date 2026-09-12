@@ -58,7 +58,8 @@ public class PetInfoServiceImpl extends ServiceImpl<PetInfoMapper, PetInfo> impl
     @Override
     public PetInfo getPetDetail(Long petId)
     {
-        PetInfo pet = baseMapper.selectById(petId);
+        // 走关联查询，带出所属用户昵称（后台详情页需要展示）
+        PetInfo pet = baseMapper.selectPetDetailById(petId);
         if (pet == null)
         {
             throw new ServiceException("宠物不存在");
@@ -131,6 +132,32 @@ public class PetInfoServiceImpl extends ServiceImpl<PetInfoMapper, PetInfo> impl
         }
         // 逻辑删除宠物（MyBatis-Plus @TableLogic 自动处理）
         return baseMapper.deleteById(petId) > 0;
+    }
+
+    /**
+     * 后台：查询宠物列表（含所属用户昵称、疫苗记录数）
+     *
+     * @param name        宠物名称（模糊，可选）
+     * @param userKeyword 所属用户（昵称/账号/手机号模糊，可选）
+     * @param breed       品种（模糊，可选）
+     * @param petType     宠物类型（cat-猫 dog-狗 other-其他，精确匹配，可选）
+     * @return 宠物信息集合
+     */
+    @Override
+    public List<PetInfo> getAdminPetList(String name, String userKeyword, String breed, String petType)
+    {
+        return baseMapper.selectAdminPetList(name, userKeyword, breed, petType);
+    }
+
+    /**
+     * 后台：查询品种去重列表（筛选下拉用）
+     *
+     * @return 品种集合
+     */
+    @Override
+    public List<String> getBreedOptions()
+    {
+        return baseMapper.selectDistinctBreeds();
     }
 
     /**

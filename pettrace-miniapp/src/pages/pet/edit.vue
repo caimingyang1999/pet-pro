@@ -14,7 +14,7 @@
             <text class="avatar-tip">上传中</text>
           </template>
           <template v-else>
-            <u-icon name="camera" color="#fff" size="24" />
+            <Icon name="camera" color="#fff" size="24" />
             <text class="avatar-tip">{{ form.avatar ? '更换头像' : '添加头像' }}</text>
           </template>
         </view>
@@ -34,6 +34,26 @@
         />
       </view>
       <text class="error-text" v-if="errors.name">{{ errors.name }}</text>
+
+      <!-- 宠物类型（用于首页养宠知识的兴趣推荐） -->
+      <view class="form-row" :class="{ 'form-error': errors.petType }">
+        <text class="form-label required">宠物类型</text>
+        <view class="radio-group">
+          <view
+            class="radio-option"
+            v-for="item in petTypeOptions"
+            :key="item.value"
+            :class="{ active: form.petType === item.value }"
+            @click="form.petType = item.value"
+          >
+            <text class="radio-icon" :class="{ checked: form.petType === item.value }">
+              {{ form.petType === item.value ? '✓' : '' }}
+            </text>
+            <text class="radio-text">{{ item.label }}</text>
+          </view>
+        </view>
+      </view>
+      <text class="error-text" v-if="errors.petType">{{ errors.petType }}</text>
 
       <!-- 品种 -->
       <view class="form-row" :class="{ 'form-error': errors.breed }">
@@ -104,7 +124,7 @@
             <text :class="{ placeholder: !form.birthday }">
               {{ form.birthday || '请选择出生日期' }}
             </text>
-            <u-icon name="arrow-right" color="#C0C4CC" size="16" />
+            <Icon name="chevron_right" color="#C0C4CC" size="16" />
           </view>
         </view>
       </picker>
@@ -173,18 +193,25 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, onMounted } from 'vue';
 import { addPet, updatePet, deletePet, getPetDetail } from '@/api/pet.js';
 import { showToast, showConfirm, showLoading, hideLoading, fullImageUrl } from '@/utils/index.js';
 import { SERVER_BASE } from '@/api/request.js';
 import { pickUploadedPath } from '@/api/request.js';
+import { isLoggedIn, requireLogin, goLogin } from '@/utils/auth.js';
+import { PET_TYPE_OPTIONS } from '@/config/petTypes.js';
 
 // RuoYi 通用上传接口
 const UPLOAD_URL = `${SERVER_BASE}/common/upload`;
 
+/** 宠物类型选项（与后台、文章适用宠物同一套词表） */
+const petTypeOptions = PET_TYPE_OPTIONS;
+
 const form = ref({
   name: '',
   avatar: '',
+  petType: '',
   breed: '',
   gender: '1',
   weight: '',
@@ -194,7 +221,7 @@ const form = ref({
   remark: '',
 });
 
-const errors = ref({ name: '', breed: '' });
+const errors = ref({ name: '', petType: '', breed: '' });
 
 const submitting = ref(false);
 const deleting = ref(false);
@@ -261,10 +288,15 @@ const uploadAvatar = (filePath) => {
 
 /** 表单校验 */
 const validate = () => {
-  errors.value = { name: '', breed: '' };
+  errors.value = { name: '', petType: '', breed: '' };
   if (!form.value.name.trim()) {
     errors.value.name = '请输入宠物名称';
     showToast('请输入宠物名称');
+    return false;
+  }
+  if (!form.value.petType) {
+    errors.value.petType = '请选择宠物类型';
+    showToast('请选择宠物类型');
     return false;
   }
   if (!form.value.breed.trim()) {
@@ -278,6 +310,7 @@ const validate = () => {
 /** 提交表单 */
 const handleSubmit = async () => {
   if (submitting.value) return; // 防重复提交
+  if (!(await requireLogin(isEdit.value ? '编辑爱宠档案' : '添加爱宠档案'))) return;
   if (!validate()) return;
 
   submitting.value = true;
@@ -285,6 +318,7 @@ const handleSubmit = async () => {
   try {
     const payload = {
       name: form.value.name.trim(),
+      petType: form.value.petType,
       breed: form.value.breed.trim(),
       gender: form.value.gender,
       sterilization: form.value.sterilization,
@@ -348,6 +382,28 @@ const handleDelete = async () => {
 };
 
 onMounted(() => {
+  // 宠物档案属于私有数据：未登录不允许进入本页。
+  // 这里用显式弹窗（而非 requireLogin）是因为需要区分用户点了"去登录"还是"返回"：
+  // 选"去登录"要保留本页作为返回落点，选"返回"才退出。
+  if (!isLoggedIn()) {
+    uni.showModal({
+      title: '需要登录',
+      content: '登录后即可建立爱宠档案，是否现在登录？',
+      confirmText: '去登录',
+      cancelText: '返回',
+      confirmColor: '#FF8C42',
+      cancelColor: '#8A8A8A',
+      success: (res) => {
+        if (res.confirm) {
+          goLogin();
+        } else {
+          uni.navigateBack({ delta: 1, fail: () => uni.switchTab({ url: '/pages/pet/list' }) });
+        }
+      },
+    });
+    return;
+  }
+
   const pages = getCurrentPages();
   const current = pages[pages.length - 1];
   const { id } = current.options || current.$route?.query || {};
@@ -360,6 +416,7 @@ onMounted(() => {
       form.value = {
         name: data.name || '',
         avatar: data.avatar || '',
+        petType: data.petType || '',
         breed: data.breed || '',
         gender: String(data.gender ?? '1'),
         weight: data.weight != null ? String(data.weight) : '',
@@ -513,6 +570,7 @@ onMounted(() => {
 /* ========== 单选组（自定义） ========== */
 .radio-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 24rpx;
 }
 

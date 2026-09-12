@@ -1,7 +1,7 @@
 <template>
   <view class="page-container">
     <!-- 加载骨架 -->
-    <LoadingState v-if="loading && !addressList.length" mode="skeleton" type="post" :count="3" />
+    <LoadingState v-if="loading && !addressList.length" mode="skeleton" type="list" :count="3" />
 
     <template v-else>
       <!-- 地址列表 -->
@@ -32,15 +32,15 @@
               class="action-btn"
               @click="handleSetDefault(addr)"
             >
-              <u-icon name="checkmark-circle" color="#FF8C42" size="16" />
+              <Icon name="check" color="#FF8C42" size="16" />
               <text class="action-text">设为默认</text>
             </view>
             <view class="action-btn" @click="goEdit(addr)">
-              <u-icon name="edit-pen" color="#999" size="16" />
+              <Icon name="edit" color="#999" size="16" />
               <text class="action-text">编辑</text>
             </view>
             <view class="action-btn danger" @click="handleDelete(addr)">
-              <u-icon name="trash" color="#F56C6C" size="16" />
+              <Icon name="trash" color="#F56C6C" size="16" />
               <text class="action-text">删除</text>
             </view>
           </view>
@@ -52,7 +52,7 @@
 
     <view class="bottom-bar">
       <view class="add-btn" @click="goEdit()">
-        <u-icon name="plus" color="#fff" size="20" />
+        <Icon name="plus" color="#fff" size="20" />
         <text class="add-text">{{ selectMode ? '添加地址' : '添加新地址' }}</text>
       </view>
     </view>
@@ -60,6 +60,7 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, getCurrentInstance } from 'vue';
 import { onShow, onLoad } from '@dcloudio/uni-app';
 import EmptyState from '@/components/EmptyState.vue';

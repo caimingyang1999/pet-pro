@@ -15,16 +15,41 @@
 <script>
 import * as echarts from 'echarts'
 import resize from '../mixins/resize'
-import { userGrowthData } from './mock'
 
 export default {
   name: 'UserGrowthChart',
   mixins: [resize],
+  props: {
+    // 用户增长数据，由父级统一拉取后下发
+    userGrowth: {
+      type: Object,
+      default: () => ({ dates: [], data: [] })
+    },
+    // 当前统计天数（7/14/30），用于同步时间范围下拉
+    days: {
+      type: Number,
+      default: 7
+    }
+  },
   data() {
     return {
       chart: null,
-      range: '7',
-      growthData: userGrowthData
+      range: String(this.days)
+    }
+  },
+  watch: {
+    // 父级数据到位后重绘
+    userGrowth() {
+      this.renderChart()
+    },
+    // 同步父级天数变化，避免下拉与实际数据窗口不一致
+    days(val) {
+      if (String(val) !== this.range) {
+        this.range = String(val)
+      }
+    },
+    range() {
+      this.$emit('range-change', Number(this.range))
     }
   },
   mounted() {
@@ -44,8 +69,13 @@ export default {
       this.renderChart()
     },
     renderChart() {
-      const dates = this.growthData.dates
-      const data = this.growthData.data
+      // 数据可能早于图表初始化到达，此时跳过绘制
+      if (!this.chart) {
+        return
+      }
+      const growth = this.userGrowth || { dates: [], data: [] }
+      const dates = growth.dates || []
+      const data = growth.data || []
 
       this.chart.setOption({
         tooltip: {

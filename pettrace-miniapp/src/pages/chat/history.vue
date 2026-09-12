@@ -11,7 +11,7 @@
     >
       <!-- 加载骨架 -->
       <view v-if="loading && !sessions.length" class="loading-wrap">
-        <LoadingState mode="skeleton" type="post" :count="4" />
+        <LoadingState mode="skeleton" type="list" :count="4" />
       </view>
 
       <!-- 会话列表 -->
@@ -23,7 +23,7 @@
           @click="openSession(s)"
         >
           <view class="session-icon">
-            <text>💬</text>
+            <Icon name="message" :size="18" color="#8A8D9A" />
           </view>
           <view class="session-info">
             <text class="session-title">{{ s.sessionTitle || '未命名提问' }}</text>
@@ -40,7 +40,7 @@
       <!-- 空状态 -->
       <view v-else class="empty-section">
         <view class="empty-icon-wrap">
-          <text class="empty-emoji">💬</text>
+          <Icon class="empty-emoji" name="message" :size="58" color="#FFC8A2" />
         </view>
         <text class="empty-title">还没有问答记录</text>
         <text class="empty-desc">有任何养宠问题，随时来问宠迹 AI 助手吧～</text>
@@ -179,7 +179,7 @@ const continueChat = () => {
   uni.setStorageSync(SESSION_KEY, sessionId);
   // 2. 写入恢复标记（对话页 onShow 时检测到该标记会：清空当前消息 + 加载历史）
   uni.setStorageSync(RESTORE_KEY, '1');
-  uni.switchTab({ url: '/pages/chat/index' });
+  uni.redirectTo({ url: '/pages/chat/index' });
 };
 
 const backToList = () => {
@@ -196,7 +196,7 @@ onBackPress(() => {
   return false;
 });
 
-const goChat = () => uni.switchTab({ url: '/pages/chat/index' });
+const goChat = () => uni.redirectTo({ url: '/pages/chat/index' });
 
 /**
  * 时间格式化：2026-08-19 15:30:00 → 08-19 15:30

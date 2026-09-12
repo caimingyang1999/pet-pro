@@ -15,7 +15,7 @@
         :key="log.id"
       >
         <view class="log-icon" :class="iconClass(log.changeType)">
-          <text>{{ typeIcon(log.changeType) }}</text>
+          <Icon :name="typeIcon(log.changeType)" :size="17" color="#fff" />
         </view>
         <view class="log-info">
           <text class="log-title">{{ typeText(log.changeType) }}</text>
@@ -37,11 +37,13 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref } from 'vue';
 import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
 import EmptyState from '@/components/EmptyState.vue';
 import { getPointsLog, getUserInfo } from '@/api/user.js';
 import { formatDateTime } from '@/utils/index.js';
+import { isLoggedIn } from '@/utils/auth.js';
 import { useUserStore } from '@/store/user.js';
 
 const userStore = useUserStore();
@@ -56,42 +58,84 @@ const pageParams = ref({ pageNum: 1, pageSize: 10 });
 // 变动类型映射
 const TYPE_TEXT = {
   sign_in: '每日签到',
-  post: '发布动态',
+  post: '内容贡献',
   exchange: '兑换商品',
   admin: '管理员操作',
   register: '注册奖励',
   pet: '完善宠物信息',
 };
 
+// 变动类型 → 明细条目图标（uni-icons）
 const TYPE_ICON = {
-  sign_in: '签',
-  post: '发',
-  exchange: '兑',
-  admin: '管',
-  register: '注',
-  pet: '宠',
+  sign_in: 'calendar',
+  post: 'edit',
+  exchange: 'gift',
+  admin: 'settings',
+  register: 'vip',
+  pet: 'pet',
 };
 
 const typeText = (type) => TYPE_TEXT[type] || '积分变动';
-const typeIcon = (type) => TYPE_ICON[type] || '积';
+const typeIcon = (type) => TYPE_ICON[type] || 'wallet';
 
 const iconClass = (type) => {
   if (type === 'exchange' || type === 'admin') return 'icon-minus';
   return 'icon-plus';
 };
 
-onLoad(() => {
+/** 安全返回：页面栈只有本页时退回「我的」tab */
+const goBackSafely = () => {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack();
+  } else {
+    uni.switchTab({ url: '/pages/mine/index' });
+  }
+};
+
+/** 加载页面数据 */
+const loadPageData = () => {
   fetchBalance();
   fetchLogs(true);
+};
+
+onLoad(() => {
+  // 积分明细属于个人数据，必须登录后查看
+  if (isLoggedIn()) {
+    loadPageData();
+    return;
+  }
+  uni.showModal({
+    title: '需要登录',
+    content: '登录后即可查看积分明细，是否现在登录？',
+    confirmText: '去登录',
+    cancelText: '返回',
+    confirmColor: '#FF8C42',
+    cancelColor: '#8A8A8A',
+    success: (res) => {
+      if (res.confirm) {
+        // 用 redirectTo 替换当前页，避免登录完成后回到一个空白的明细页
+        uni.redirectTo({ url: '/pages/login/index' });
+      } else {
+        goBackSafely();
+      }
+    },
+    fail: () => goBackSafely(),
+  });
 });
 
 onPullDownRefresh(() => {
+  if (!isLoggedIn()) {
+    uni.stopPullDownRefresh();
+    return;
+  }
   Promise.all([fetchBalance(), fetchLogs(true)]).finally(() => {
     uni.stopPullDownRefresh();
   });
 });
 
 onReachBottom(() => {
+  if (!isLoggedIn()) return;
   loadMore();
 });
 

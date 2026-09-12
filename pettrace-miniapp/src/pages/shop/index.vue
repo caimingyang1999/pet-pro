@@ -7,38 +7,39 @@
       <text class="deco-paw paw-2">🐾</text>
       <text class="deco-paw paw-3">🦴</text>
 
-      <!-- 自定义导航 -->
-      <view class="custom-nav" :style="{ paddingTop: navBarHeight + 'px' }">
-        <view class="nav-content">
-          <view class="nav-title-wrap">
-            <text class="nav-title">积分商城</text>
+      <!-- 统一标题栏：搜索按钮放左侧，避开右上角微信胶囊按钮 -->
+      <NavBar title="积分商城">
+        <template #left>
+          <view class="nav-btn pet-press" @click="handleSearch">
+            <Icon name="search" :size="20" color="#fff" />
           </view>
-          <view class="nav-right">
-            <view class="nav-btn pet-press" @click="handleSearch">
-              <Icon name="search" :size="20" color="#fff" />
-            </view>
-          </view>
-        </view>
+        </template>
+      </NavBar>
+
+      <!-- 演示模式提示：个人作品，兑换不真实发货 -->
+      <view class="demo-tip-slot" v-if="isShopDemo()">
+        <DemoNotice theme="primary" :text="SHOP_DEMO.banner" />
       </view>
 
       <!-- 积分余额卡片 -->
       <view class="points-card">
-        <view class="points-left">
+        <view class="points-top">
           <text class="points-label">我的积分</text>
-          <view class="points-value-row">
-            <text class="points-value">{{ userPoints }}</text>
-            <view class="coin-paw" @click="goPointsDetail">
-              <text class="coin-emoji">🪙</text>
-              <text class="coin-text">明细</text>
-            </view>
-          </view>
-          <text class="points-sub">每 500 积分即可开启一次心动兑换 🎁</text>
-        </view>
-        <view class="points-right" @click="goPointsDetail">
-          <view class="paw-badge">
-            <text class="paw-badge-emoji">🐾</text>
+          <view class="points-detail pet-press" @click="goPointsDetail">
+            <text>积分明细</text>
+            <Icon name="chevron_right" :size="12" color="#fff" />
           </view>
         </view>
+
+        <view class="points-value-row">
+          <text class="points-value">{{ isLogin ? userPoints : '--' }}</text>
+          <text v-if="isLogin" class="points-unit">分</text>
+        </view>
+
+        <text class="points-sub">
+          {{ isLogin ? '每 500 积分就能兑一份心动好礼' : '登录后即可查看并使用积分' }}
+        </text>
+
         <text class="points-watermark">🐾</text>
       </view>
     </view>
@@ -55,12 +56,12 @@
         <view
           class="category-item"
           :id="'cat-' + cat.id"
-          v-for="(cat, idx) in categories"
+          v-for="cat in categories"
           :key="cat.id"
           @click="changeCategory(cat)"
         >
           <view class="cat-icon" :class="{ active: currentCategory === cat.id }">
-            <text class="cat-emoji">{{ categoryIcons[cat.id] || DEFAULT_ICONS[idx % DEFAULT_ICONS.length] }}</text>
+            <text class="cat-emoji">{{ categoryIcons[cat.id] || '🎁' }}</text>
           </view>
           <text class="cat-name" :class="{ active: currentCategory === cat.id }">{{ cat.categoryName }}</text>
         </view>
@@ -154,7 +155,7 @@
         <!-- 热门搜索 -->
         <view class="hot-search">
           <view class="hot-title">
-            <text class="hot-emoji">🔥</text>
+            <Icon class="hot-emoji" name="fire" :size="12" color="#fff" />
             <text class="hot-text">大家都在搜</text>
           </view>
           <view class="hot-tags">
@@ -176,26 +177,75 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import NavBar from '@/components/NavBar.vue';
+import DemoNotice from '@/components/DemoNotice.vue';
 import ProductCard from '@/components/ProductCard.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import LoadingState from '@/components/LoadingState.vue';
 import Icon from '@/components/Icon.vue';
 import { getCategories, getProductList } from '@/api/shop.js';
 import { useUserStore } from '@/store/user.js';
+import { getNavBarHeight } from '@/utils/navbar.js';
+import { requireLogin } from '@/utils/auth.js';
+import { isShopDemo, SHOP_DEMO } from '@/config/shopDemo.js';
 
 const userStore = useUserStore();
 const userPoints = computed(() => userStore.userInfo?.points || 0);
+const isLogin = computed(() => userStore.isLogin);
 
-/** 分类图标兜底序列（emoji） */
-const DEFAULT_ICONS = ['🐾', '🍖', '🍗', '🧸', '🛁', '👕', '🏠', '🎾', '🦴', '💊', '🧶'];
+/** 搜索面板顶部与标题栏对齐 */
+const navBarHeight = getNavBarHeight();
 
-const navBarHeight = ref(44);
-// #ifdef MP-WEIXIN
-try {
-  const menuRect = uni.getMenuButtonBoundingClientRect();
-  navBarHeight.value = menuRect.bottom + 4;
-} catch (e) {}
-// #endif
+/**
+ * 分类图标兜底序列（emoji）
+ * 仅当分类名未命中下方规则时按名称哈希取用，保证「同名稳定、不同名不同」
+ */
+const DEFAULT_ICONS = ['🎁', '⭐', '💡', '🎀', '🧩', '🍀', '🔖', '🎪', '🪁', '🌈', '🎵', '🏷️'];
+
+/**
+ * 分类名关键词 → 专属图标
+ * ⚠️ 顺序敏感：越具体的规则越靠前（如「猫条」必须先于「猫粮」，「磨牙棒」必须先于「食品」）
+ */
+const CATEGORY_ICON_RULES = [
+  { test: /全部|所有/, icon: '🐾' },
+  { test: /猫条|肉条|湿粮|罐头/, icon: '🍡' },
+  { test: /猫粮|猫主粮/, icon: '🐟' },
+  { test: /狗粮|犬粮|狗主粮/, icon: '🍖' },
+  { test: /磨牙|咬胶|肉干|零食/, icon: '🦴' },
+  { test: /猫砂|猫厕/, icon: '🪣' },
+  { test: /粮|主食|食品/, icon: '🍚' },
+  { test: /逗猫|猫棒/, icon: '🎣' },
+  { test: /玩具|球|飞盘/, icon: '🧸' },
+  { test: /抓板|猫爬|爬架/, icon: '🪵' },
+  { test: /窝|垫|床|笼|帐篷/, icon: '🏠' },
+  { test: /饮水|水壶|水嘴/, icon: '💧' },
+  { test: /碗|盆|喂食/, icon: '🥣' },
+  { test: /梳|刷|毛|护理/, icon: '🧴' },
+  { test: /洗|浴|清洁|除臭/, icon: '🛁' },
+  { test: /牵引|项圈|胸背|牵绳/, icon: '🦮' },
+  { test: /服饰|衣/, icon: '👕' },
+  { test: /保健|药|营养|驱虫|疫苗/, icon: '💊' },
+  { test: /用品|日用|百货/, icon: '🧺' },
+];
+
+/** 按名称哈希取兜底图标，避免"下标取模"导致同名不同图标或相邻重复 */
+const hashIcon = (name) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) {
+    h = (h * 31 + name.charCodeAt(i)) % 99991;
+  }
+  return DEFAULT_ICONS[h % DEFAULT_ICONS.length];
+};
+
+const assignCategoryIcons = (cats) => {
+  const map = {};
+  cats.forEach((cat) => {
+    const kw = cat.categoryName || '';
+    const hit = CATEGORY_ICON_RULES.find((rule) => rule.test.test(kw));
+    map[cat.id] = hit ? hit.icon : hashIcon(kw);
+  });
+  categoryIcons.value = map;
+};
 
 const keyword = ref('');
 const searchOpen = ref(false);
@@ -212,25 +262,6 @@ const pageParams = ref({ pageNum: 1, pageSize: 10 });
 
 /** 已按分类名/位置分配好的 emoji */
 const categoryIcons = ref({});
-
-const assignCategoryIcons = (cats) => {
-  const map = {};
-  cats.forEach((cat, idx) => {
-    // 常见品类关键词 → emoji
-    const kw = cat.categoryName || '';
-    const icon =
-      (kw.includes('粮') || kw.includes('主食') || kw.includes('零食')) ? '🍖' :
-      (kw.includes('猫') || kw.includes('狗狗') || kw.includes('狗')) ? '🐶' :
-      (kw.includes('玩具')) ? '🧸' :
-      (kw.includes('洗') || kw.includes('清洁')) ? '🛁' :
-      (kw.includes('服饰') || kw.includes('衣')) ? '👕' :
-      (kw.includes('窝') || kw.includes('居') || kw.includes('笼')) ? '🏠' :
-      (kw.includes('保健') || kw.includes('药品') || kw.includes('驱虫')) ? '💊' :
-      DEFAULT_ICONS[idx % DEFAULT_ICONS.length];
-    map[cat.id] = icon;
-  });
-  categoryIcons.value = map;
-};
 
 const fetchCategories = async () => {
   try {
@@ -325,7 +356,9 @@ const loadMore = () => {
   fetchProducts(false);
 };
 const goDetail = (id) => uni.navigateTo({ url: `/pages/shop/detail?id=${id}` });
-const goPointsDetail = () => {
+/** 积分明细属于个人账户信息，未登录时统一弹窗引导 */
+const goPointsDetail = async () => {
+  if (!(await requireLogin('查看积分明细'))) return;
   uni.navigateTo({ url: '/pages/mine/points' });
 };
 
@@ -348,7 +381,7 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   background: $gradient-primary;
-  padding-bottom: 46rpx;
+  padding-bottom: 56rpx;
 
   .deco-paw {
     position: absolute;
@@ -356,63 +389,35 @@ onMounted(() => {
     font-size: 96rpx;
   }
 
-  .paw-1 { top: 110rpx; right: -18rpx; transform: rotate(18deg); }
-  .paw-2 { top: 250rpx; left: -28rpx; transform: rotate(-22deg); font-size: 120rpx; }
-  .paw-3 { bottom: 24rpx; right: 100rpx; font-size: 56rpx; transform: rotate(8deg); }
+  .paw-1 { top: 190rpx; right: -18rpx; transform: rotate(18deg); }
+  .paw-2 { top: 300rpx; left: -28rpx; transform: rotate(-22deg); font-size: 120rpx; }
+  .paw-3 { bottom: 18rpx; right: 90rpx; font-size: 56rpx; transform: rotate(8deg); }
 }
 
-/* ===== 自定义导航 ===== */
-.custom-nav {
-  position: relative;
-  z-index: 2;
+/* 演示模式提示条：与积分卡左右对齐 */
+.demo-tip-slot {
+  margin: 16rpx 24rpx 0;
+}
 
-  .nav-content {
-    display: flex;
-    align-items: center;
-    padding: 8rpx 28rpx 20rpx;
-    position: relative;
-  }
-
-  .nav-title-wrap {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 8rpx;
-    text-align: center;
-  }
-
-  .nav-title {
-    font-size: $font-xl;
-    font-weight: $font-weight-bold;
-    color: $text-white;
-    text-shadow: 0 2rpx 8rpx rgba(224, 86, 24, 0.25);
-  }
-
-  .nav-right {
-    margin-left: auto;
-    position: relative;
-    z-index: 1;
-  }
-
-  .nav-btn {
-    width: 64rpx;
-    height: 64rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(255, 255, 255, 0.22);
-    border: 1rpx solid rgba(255, 255, 255, 0.25);
-    border-radius: 50%;
-    backdrop-filter: blur(8rpx);
-    -webkit-backdrop-filter: blur(8rpx);
-  }
+/* ===== 标题栏右侧搜索按钮 ===== */
+.nav-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.22);
+  border: 1rpx solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  backdrop-filter: blur(8rpx);
+  -webkit-backdrop-filter: blur(8rpx);
 }
 
 /* ===== 积分余额卡片（玻璃拟态） ===== */
 .points-card {
   position: relative;
-  margin: 0 24rpx;
-  padding: 32rpx 32rpx 30rpx;
+  margin: 16rpx 24rpx 0;
+  padding: 26rpx 28rpx 28rpx;
   border-radius: $radius-lg;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.12) 100%);
   border: 1rpx solid rgba(255, 255, 255, 0.32);
@@ -421,87 +426,71 @@ onMounted(() => {
   -webkit-backdrop-filter: blur(16rpx);
   overflow: hidden;
 
-  .points-left {
+  .points-top {
     position: relative;
     z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
     .points-label {
       font-size: $font-sm;
       color: rgba(255, 255, 255, 0.88);
     }
 
-    .points-value-row {
-      display: flex;
+    .points-detail {
+      display: inline-flex;
       align-items: center;
-      margin: 14rpx 0;
+      gap: 2rpx;
+      padding: 8rpx 16rpx 8rpx 20rpx;
+      background: rgba(255, 255, 255, 0.22);
+      border: 1rpx solid rgba(255, 255, 255, 0.3);
+      border-radius: $radius-round;
 
-      .points-value {
-        font-size: 76rpx;
-        font-weight: $font-weight-bold;
+      text {
+        font-size: $font-xs;
         color: #fff;
-        line-height: 1;
-        text-shadow: 0 4rpx 12rpx rgba(185, 61, 9, 0.22);
       }
-
-      .coin-paw {
-        display: flex;
-        align-items: center;
-        gap: 8rpx;
-        margin-left: 24rpx;
-        padding: 8rpx 22rpx;
-        background: rgba(255, 255, 255, 0.24);
-        border: 1rpx solid rgba(255, 255, 255, 0.3);
-        border-radius: $radius-round;
-
-        .coin-emoji {
-          font-size: $font-md;
-          animation: pet-bounce 2.6s ease infinite;
-        }
-
-        .coin-text {
-          font-size: $font-xs;
-          color: #fff;
-        }
-      }
-    }
-
-    .points-sub {
-      font-size: $font-xs;
-      color: rgba(255, 255, 255, 0.78);
     }
   }
 
-  .points-right {
-    position: absolute;
-    right: 28rpx;
-    top: 50%;
-    transform: translateY(-50%);
+  .points-value-row {
+    position: relative;
     z-index: 2;
+    display: flex;
+    align-items: baseline;
+    gap: 8rpx;
+    margin-top: 12rpx;
 
-    .paw-badge {
-      width: 120rpx;
-      height: 120rpx;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.22);
-      border: 2rpx dashed rgba(255, 255, 255, 0.55);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: pet-float 3.4s ease-in-out infinite;
-
-      .paw-badge-emoji {
-        font-size: 64rpx;
-        filter: drop-shadow(0 4rpx 8rpx rgba(181, 58, 8, 0.2));
-      }
+    .points-value {
+      font-size: 68rpx;
+      font-weight: $font-weight-bold;
+      color: #fff;
+      line-height: 1.1;
+      text-shadow: 0 4rpx 12rpx rgba(185, 61, 9, 0.22);
     }
+
+    .points-unit {
+      font-size: $font-sm;
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  .points-sub {
+    position: relative;
+    z-index: 2;
+    display: block;
+    margin-top: 10rpx;
+    font-size: $font-xs;
+    color: rgba(255, 255, 255, 0.8);
   }
 
   .points-watermark {
     position: absolute;
-    left: 240rpx;
-    bottom: -40rpx;
-    font-size: 200rpx;
-    opacity: 0.08;
+    right: -8rpx;
+    bottom: -52rpx;
+    font-size: 180rpx;
+    opacity: 0.1;
     transform: rotate(-14deg);
   }
 }
@@ -509,10 +498,11 @@ onMounted(() => {
 /* ========== 分类图标导航 ========== */
 .category-wrap {
   position: relative;
-  margin-top: -28rpx;
+  /* 内容区做成一张圆角"纸"，压在渐变头部上，形成层次 */
+  margin-top: -32rpx;
   background: $bg-page;
-  padding-top: 40rpx;
-  border-radius: 36rpx 36rpx 0 0;
+  padding: 36rpx 0 12rpx;
+  border-radius: $radius-xl $radius-xl 0 0;
 
   .category-scroll {
     width: 100%;
@@ -604,7 +594,6 @@ onMounted(() => {
   grid-template-columns: repeat(2, 1fr);
   gap: 24rpx;
 }
-
 
 /* ===== 加载更多 ===== */
 .load-more {

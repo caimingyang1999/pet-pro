@@ -1,7 +1,7 @@
 <template>
   <el-row :gutter="20" class="stats-cards">
     <el-col
-      v-for="item in statsData"
+      v-for="item in stats"
       :key="item.key"
       :xs="24"
       :sm="12"
@@ -19,8 +19,8 @@
           </div>
           <div class="stat-growth">
             <span class="growth-label">较昨日</span>
-            <span class="growth-up">
-              <i class="el-icon-top"></i> {{ item.growth }}%
+            <span :class="item.growth >= 0 ? 'growth-up' : 'growth-down'">
+              <i :class="item.growth >= 0 ? 'el-icon-top' : 'el-icon-bottom'"></i> {{ Math.abs(item.growth) }}%
             </span>
           </div>
         </div>
@@ -31,14 +31,15 @@
 
 <script>
 import CountTo from 'vue-count-to'
-import { statsData } from './mock'
 
 export default {
   name: 'StatsCards',
   components: { CountTo },
-  data() {
-    return {
-      statsData
+  props: {
+    // 统计卡片数据，由父级统一拉取后下发
+    stats: {
+      type: Array,
+      default: () => []
     }
   },
   methods: {

@@ -1,34 +1,34 @@
 <template>
-  <div class="dashboard-container">
+  <div class="dashboard-container" v-loading="loading" element-loading-text="数据加载中...">
     <!-- 欢迎区域 -->
     <welcome-banner />
 
     <!-- 统计卡片 -->
-    <stats-cards />
+    <stats-cards :stats="overview.stats" />
 
     <!-- 第二行：数据趋势 + 订单状态 + 待处理事项 -->
     <el-row :gutter="20" class="chart-row chart-row-2">
       <el-col :xs="24" :sm="24" :lg="12" :xl="12">
-        <data-trend-chart />
+        <data-trend-chart :trend="overview.trend" :days="days" @range-change="handleDaysChange" />
       </el-col>
       <el-col :xs="24" :sm="12" :lg="6" :xl="6">
-        <order-status-pie />
+        <order-status-pie :order-status="overview.orderStatus" />
       </el-col>
       <el-col :xs="24" :sm="12" :lg="6" :xl="6">
-        <pending-tasks />
+        <pending-tasks :tasks="overview.pendingTasks" />
       </el-col>
     </el-row>
 
     <!-- 第三行：最新动态 + 热门商品 + 用户增长 -->
     <el-row :gutter="20" class="chart-row chart-row-3">
       <el-col :xs="24" :sm="24" :lg="8" :xl="8">
-        <latest-activities />
+        <latest-activities :activities="overview.latestActivities" />
       </el-col>
       <el-col :xs="24" :sm="24" :lg="8" :xl="8">
-        <hot-products />
+        <hot-products :products="overview.hotProducts" />
       </el-col>
       <el-col :xs="24" :sm="24" :lg="8" :xl="8">
-        <user-growth-chart />
+        <user-growth-chart :user-growth="overview.userGrowth" :days="days" @range-change="handleDaysChange" />
       </el-col>
     </el-row>
   </div>
@@ -45,6 +45,8 @@ const LatestActivities = () => import('@/views/dashboard/home/LatestActivities.v
 const HotProducts = () => import('@/views/dashboard/home/HotProducts.vue')
 const UserGrowthChart = () => import('@/views/dashboard/home/UserGrowthChart.vue')
 
+import { getDashboardOverview } from '@/api/dashboard'
+
 export default {
   name: 'Index',
   components: {
@@ -56,6 +58,47 @@ export default {
     LatestActivities,
     HotProducts,
     UserGrowthChart
+  },
+  data() {
+    return {
+      loading: false,
+      days: 7,
+      // 初始空结构，避免子组件在接口返回前渲染异常
+      overview: {
+        stats: [],
+        trend: { dates: [], series: [] },
+        orderStatus: { total: 0, totalLabel: '', legend: [] },
+        pendingTasks: [],
+        latestActivities: [],
+        hotProducts: [],
+        userGrowth: { dates: [], data: [] }
+      }
+    }
+  },
+  created() {
+    this.loadData()
+  },
+  methods: {
+    loadData() {
+      this.loading = true
+      getDashboardOverview(this.days)
+        .then(res => {
+          if (res && res.data) {
+            this.overview = res.data
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          this.loading = false
+        })
+    },
+    // 趋势/用户增长图切换时间范围时，重新拉取整页数据
+    handleDaysChange(days) {
+      // 天数未变化时忽略，避免子组件同步天数触发重复请求
+      if (this.days === days) return
+      this.days = days
+      this.loadData()
+    }
   }
 }
 </script>

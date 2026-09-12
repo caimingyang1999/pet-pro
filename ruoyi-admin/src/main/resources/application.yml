@@ -122,6 +122,13 @@ ai:
     chat-path: /api/pet/chat
     # 清空历史接口路径
     history-path: /api/pet/chat/history
+  article:
+    # 养宠知识文章生成服务（与对话服务同机同端口）
+    base-url: ${AI_ARTICLE_BASE_URL:http://127.0.0.1:3300}
+    # 生成文章接口路径
+    generate-path: /api/article/generate
+    # 能力探测接口路径
+    status-path: /api/article/status
 
 # MyBatis-Plus配置
 mybatis-plus:

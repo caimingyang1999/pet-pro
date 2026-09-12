@@ -1,8 +1,13 @@
 <template>
   <view class="detail-page">
-    <LoadingState v-if="loading" mode="skeleton" type="post" :count="3" />
+    <LoadingState v-if="loading" mode="skeleton" type="list" :count="3" />
 
     <template v-else-if="order">
+      <!-- 演示模式提示：兑换不会真实发货 -->
+      <view class="demo-tip-slot" v-if="isShopDemo()">
+        <DemoNotice :text="SHOP_DEMO.banner" />
+      </view>
+
       <!-- 状态卡片 -->
       <view class="status-card">
         <view class="status-main">
@@ -11,7 +16,7 @@
         </view>
         <view class="order-no-row" @click="copyOrderNo">
           <text class="order-no">订单号: {{ order.orderNo }}</text>
-          <u-icon name="file-text" color="#C0C4CC" size="18" />
+          <Icon name="file_text" color="#C0C4CC" size="18" />
         </view>
       </view>
 
@@ -67,19 +72,24 @@
           <text class="info-label">更新时间</text>
           <text class="info-value">{{ formatDateTime(order.updateTime) }}</text>
         </view>
-        <view class="info-row">
-          <text class="info-label">快递公司</text>
-          <text class="info-value">{{ order.expressCompany || '—' }}</text>
-        </view>
-        <view class="info-row">
-          <text class="info-label">快递单号</text>
-          <text class="info-value">{{ order.expressNo || '—' }}</text>
-        </view>
+        <!-- 快递信息：演示模式下无真实物流，隐藏这两行 -->
+        <template v-if="!isShopDemo()">
+          <view class="info-row">
+            <text class="info-label">快递公司</text>
+            <text class="info-value">{{ order.expressCompany || '—' }}</text>
+          </view>
+          <view class="info-row">
+            <text class="info-label">快递单号</text>
+            <text class="info-value">{{ order.expressNo || '—' }}</text>
+          </view>
+        </template>
       </view>
 
-      <!-- 物流提示 -->
+      <!-- 演示模式：换成中性说明；真实模式下保留发货提示 -->
       <view class="tips-card" v-if="order.status === '0'">
-        <text class="tips-text">· 商品将在 1-3 个工作日内发货，请耐心等待</text>
+        <text class="tips-text">
+          {{ isShopDemo ? '· 这是一条演示订单，不会真实发货，仅用于演示积分兑换流程' : '· 商品将在 1-3 个工作日内发货，请耐心等待' }}
+        </text>
       </view>
     </template>
 
@@ -94,13 +104,16 @@
 </template>
 
 <script setup>
+import Icon from '@/components/Icon.vue';
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import EmptyState from '@/components/EmptyState.vue';
 import LoadingState from '@/components/LoadingState.vue';
+import DemoNotice from '@/components/DemoNotice.vue';
 import { getOrderDetail } from '@/api/shop.js';
 import { getAddressList } from '@/api/user.js';
 import { formatDateTime, fullImageUrl, showToast } from '@/utils/index.js';
+import { isShopDemo, SHOP_DEMO, shopStatusText, shopStatusTip } from '@/config/shopDemo.js';
 
 const order = ref(null);
 const address = ref(null);
@@ -127,9 +140,10 @@ const STATUS_TIP = {
   '3': '订单已取消',
 };
 
-const statusText = (s) => STATUS_TEXT[String(s)] || '未知';
+// 演示模式下用中性文案（"待处理/已处理"），避免"待发货"这类承诺
+const statusText = (s) => shopStatusText(s, STATUS_TEXT[String(s)] || '未知');
 const statusType = (s) => STATUS_TYPE[String(s)] || 'info';
-const statusTip = (s) => STATUS_TIP[String(s)] || '';
+const statusTip = (s) => shopStatusTip(s, STATUS_TIP[String(s)] || '');
 
 const isDefaultAddress = computed(() => {
   return address.value && String(address.value.isDefault) === '1';
@@ -192,6 +206,11 @@ const goBack = () => {
   min-height: 100vh;
   padding: 20rpx;
   background-color: $pet-bg;
+}
+
+/* 演示模式提示条 */
+.demo-tip-slot {
+  margin-bottom: 20rpx;
 }
 
 .status-card {

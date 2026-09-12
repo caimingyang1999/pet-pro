@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.github.pagehelper.PageHelper;
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
@@ -39,7 +40,29 @@ public class PostController extends BaseController
     private IPostService postService;
 
     /**
+     * 安全获取当前登录用户ID：未登录（游客）时返回 null，不抛异常。
+     *
+     * 说明：动态列表/详情等浏览接口已开放匿名访问（{@link Anonymous}），
+     * SecurityUtils.getUserId() 在匿名上下文会抛 ServiceException，
+     * 因此这里统一做兜底，避免游客访问报错。登录态失效时同样视为游客。
+     */
+    private Long currentUserIdOrNull()
+    {
+        try
+        {
+            return SecurityUtils.getUserId();
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    /**
      * 动态列表（支持 tab 切换：recommend-推荐 follow-关注 latest-最新；支持关键词搜索）
+     *
+     * 该接口允许匿名访问：游客可浏览推荐/最新动态，
+     * 已登录用户额外回显点赞、关注等个人化状态。
      *
      * @param pageNum  当前页码
      * @param pageSize 每页条数
@@ -48,6 +71,7 @@ public class PostController extends BaseController
      * @param userId   指定用户动态（可选）
      */
     @ApiOperation("动态列表")
+    @Anonymous
     @GetMapping("/list")
     public TableDataInfo list(
             @ApiParam(name = "pageNum", value = "当前页码") @RequestParam(defaultValue = "1") Integer pageNum,
@@ -56,24 +80,27 @@ public class PostController extends BaseController
             @ApiParam(name = "tab", value = "列表Tab：recommend/follow/latest") @RequestParam(required = false) String tab,
             @ApiParam(name = "userId", value = "指定用户动态ID") @RequestParam(required = false) Long userId)
     {
+        // 游客场景下 currentUserId 为 null，仅回显内容本身，不返回个人化状态
+        Long currentUserId = currentUserIdOrNull();
+
         PostQueryDTO dto = new PostQueryDTO();
         dto.setPageNum(pageNum);
         dto.setPageSize(pageSize);
         dto.setKeyword(keyword);
         dto.setTab(tab);
         dto.setUserId(userId);
-        // 关注 tab 需要 currentUserId；推荐/最新也用来回显点赞状态
+        // 关注 tab 必须登录；推荐/最新登录时用于回显点赞状态
         if ("follow".equals(tab))
         {
-            if (SecurityUtils.getUserId() == null)
+            if (currentUserId == null)
             {
                 throw new ServiceException("登录后可查看关注动态");
             }
-            dto.setCurrentUserId(getUserId());
+            dto.setCurrentUserId(currentUserId);
         }
-        else if (SecurityUtils.getUserId() != null)
+        else if (currentUserId != null)
         {
-            dto.setCurrentUserId(getUserId());
+            dto.setCurrentUserId(currentUserId);
         }
         List<PetPost> list = postService.getPostList(dto);
         return getDataTable(list);
@@ -113,15 +140,17 @@ public class PostController extends BaseController
 
     /**
      * 动态详情（含点赞/关注状态回显）
+     *
+     * 允许匿名访问：游客可查看动态详情，登录后额外回显点赞/关注状态。
      */
     @ApiOperation("动态详情")
+    @Anonymous
     @GetMapping("/{postId}")
     public AjaxResult getInfo(
             @ApiParam(name = "postId", value = "动态ID", required = true)
             @PathVariable Long postId)
     {
-        Long currentUserId = SecurityUtils.getUserId() != null ? getUserId() : null;
-        return AjaxResult.success(postService.getPostDetail(postId, currentUserId));
+        return AjaxResult.success(postService.getPostDetail(postId, currentUserIdOrNull()));
     }
 
     /**
@@ -172,8 +201,11 @@ public class PostController extends BaseController
 
     /**
      * 评论列表
+     *
+     * 允许匿名访问：游客可查看动态评论。
      */
     @ApiOperation("评论列表")
+    @Anonymous
     @GetMapping("/{postId}/comments")
     public TableDataInfo comments(
             @PathVariable Long postId,
@@ -198,8 +230,11 @@ public class PostController extends BaseController
 
     /**
      * 搜索用户（模糊匹配昵称）
+     *
+     * 允许匿名访问：游客可通过昵称搜索用户。
      */
     @ApiOperation("搜索用户")
+    @Anonymous
     @GetMapping("/search/users")
     public AjaxResult searchUsers(
             @ApiParam(name = "keyword", value = "搜索关键词") @RequestParam String keyword,

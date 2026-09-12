@@ -6,12 +6,12 @@
     </div>
     <div class="activity-list">
       <div
-        v-for="item in activitiesData"
+        v-for="item in activities"
         :key="item.id"
         class="activity-item"
       >
         <div class="avatar" :style="{ background: getAvatarBg(item.user) }">
-          {{ item.user.charAt(0) }}
+          {{ (item.user || '').charAt(0) }}
         </div>
         <div class="activity-content">
           <div class="content-top">
@@ -34,21 +34,26 @@
 </template>
 
 <script>
-import { latestActivitiesData } from './mock'
-
 export default {
   name: 'LatestActivities',
+  props: {
+    // 最新动态数据，由父级统一拉取后下发
+    activities: {
+      type: Array,
+      default: () => []
+    }
+  },
   data() {
     return {
-      activitiesData: latestActivitiesData,
       avatarColors: ['#3b82f6', '#10b981', '#8b5cf6', '#f97316', '#ef4444', '#ec4899']
     }
   },
   methods: {
     getAvatarBg(name) {
+      const str = name || ''
       let hash = 0
-      for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash)
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash)
       }
       const index = Math.abs(hash) % this.avatarColors.length
       return this.avatarColors[index]

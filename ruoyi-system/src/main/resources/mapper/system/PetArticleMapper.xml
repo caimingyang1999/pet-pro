@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.PetArticleMapper">
+
+    <resultMap type="com.ruoyi.system.domain.PetArticle" id="PetArticleResult">
+        <id     property="id"          column="id"          />
+        <result property="title"       column="title"       />
+        <result property="summary"     column="summary"     />
+        <result property="coverImage"  column="cover_image" />
+        <result property="category"    column="category"    />
+        <result property="petType"     column="pet_type"    />
+        <result property="tags"        column="tags"        />
+        <result property="source"      column="source"       />
+        <result property="viewCount"   column="view_count"  />
+        <result property="sortOrder"   column="sort_order"  />
+        <result property="status"      column="status"      />
+        <result property="createBy"    column="create_by"   />
+        <result property="createTime"  column="create_time" />
+        <result property="updateBy"    column="update_by"   />
+        <result property="updateTime"  column="update_time" />
+        <result property="delFlag"     column="del_flag"    />
+    </resultMap>
+
+    <!--
+      小程序端：已发布文章列表（列表页不取正文 content，避免无谓的大字段传输）
+      兴趣优先排序：pet_type 命中用户宠物类型的排最前，通用次之，其它最后。
+      排序是"稳定"的（同档内再按 sort_order、id），因此分页加载不会出现重复或漏项。
+    -->
+    <select id="selectPublishedList" resultMap="PetArticleResult">
+        select a.id, a.title, a.summary, a.cover_image, a.category, a.pet_type,
+               a.tags, a.source, a.view_count, a.sort_order, a.status,
+               a.create_by, a.create_time, a.update_by, a.update_time, a.del_flag
+        from pet_article a
+        <where>
+            a.del_flag = '0'
+            and a.status = '1'
+            <if test="category != null and category != ''">
+                and a.category = #{category}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                and (a.title like concat('%', #{keyword}, '%')
+                     or a.summary like concat('%', #{keyword}, '%'))
+            </if>
+        </where>
+        order by
+        <if test="petType != null and petType != ''">
+            case
+                when a.pet_type = #{petType} then 0
+                when a.pet_type is null or a.pet_type = '' or a.pet_type = 'general' then 1
+                else 2
+            end,
+        </if>
+        a.sort_order asc, a.id desc
+    </select>
+
+</mapper>

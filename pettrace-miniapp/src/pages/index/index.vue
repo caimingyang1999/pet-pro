@@ -7,18 +7,17 @@
           <view class="brand-logo">🐾</view>
           <text class="brand-name">宠迹</text>
         </view>
-        <view class="search-capsule" @click="focusSearch">
+        <view class="search-capsule" @click="goSearch">
           <Icon name="search" :size="16" color="#FF8C42" />
-          <text class="search-placeholder">搜索宠物动态...</text>
+          <text class="search-placeholder">搜索养宠知识...</text>
         </view>
       </view>
     </view>
 
     <!-- ========== 顶部渐变区：轮播图 ========== -->
     <view class="top-hero" :style="{ paddingTop: contentPad + 'px' }">
-      <!-- 欢迎标语 -->
       <view class="hero-slogan">
-        <text class="slogan-text">和毛孩子的每一天都值得记录 🐶</text>
+        <text class="slogan-text">科学养宠，从记录每一天开始</text>
       </view>
 
       <!-- 圆角卡片式轮播图 + 胶囊指示器 -->
@@ -33,7 +32,7 @@
           @change="onSwiperChange"
         >
           <swiper-item
-            v-for="(banner, idx) in bannerList"
+            v-for="banner in bannerList"
             :key="banner.id"
             @click="onBannerClick(banner)"
           >
@@ -49,7 +48,6 @@
             </view>
           </swiper-item>
         </swiper>
-        <!-- 指示器：圆点 + 当前项拉长为胶囊 -->
         <view class="banner-dots" v-if="bannerList.length > 1">
           <view
             v-for="(banner, idx) in bannerList"
@@ -60,93 +58,124 @@
         </view>
       </view>
 
-      <!-- 无轮播数据时的占位卡片 -->
       <view class="banner-placeholder" v-else>
         <text class="placeholder-emoji">🐾</text>
-        <text class="placeholder-text">更多精彩动态即将上线~</text>
+        <text class="placeholder-text">更多精彩内容即将上线~</text>
       </view>
     </view>
 
     <!-- ========== 内容区 ========== -->
     <view class="content-area">
-      <!-- 推荐 / 关注 / 最新 分段切换 -->
-      <view class="feed-tabs">
+      <!-- 快捷工具 -->
+      <view class="tool-card">
         <view
-          class="feed-tab"
-          :class="{ active: currentTab === tab.key }"
-          v-for="tab in tabList"
-          :key="tab.key"
-          @click="switchTab(tab.key)"
+          class="tool-item"
+          v-for="tool in toolList"
+          :key="tool.key"
+          @click="handleToolClick(tool)"
         >
-          <text class="tab-text">{{ tab.label }}</text>
+          <view class="tool-icon" :style="{ background: tool.bg }">
+            <Icon :name="tool.icon" :size="22" :color="tool.color" />
+          </view>
+          <text class="tool-name">{{ tool.name }}</text>
         </view>
       </view>
 
-      <!-- 首次加载：爪印旋转加载 -->
-      <view class="loading-wrap" v-if="loading && !postList.length">
+      <!-- 养宠知识 -->
+      <view class="section-head">
+        <view class="section-title-wrap">
+          <text class="section-title">养宠知识</text>
+          <text class="section-sub">{{ articleSectionSub }}</text>
+        </view>
+        <view class="section-more pet-press" @click="goArticleList">
+          <text class="more-text">查看更多</text>
+          <Icon name="chevron_right" :size="14" color="#FF8C42" />
+        </view>
+      </view>
+
+      <!-- 首次加载 -->
+      <view class="loading-wrap" v-if="articleLoading && !articleList.length">
         <view class="loading-paw">
-          <text>🐾</text>
+          <Icon name="file_text" :size="26" color="#FF8C42" />
         </view>
-        <text class="loading-text">正在为你加载新鲜动态...</text>
+        <text class="loading-text">正在加载养宠知识...</text>
       </view>
 
-      <!-- 动态卡片列表 -->
-      <view class="feed-list" v-else>
-        <PostCard
-          v-for="post in postList"
-          :key="post.id"
-          :post="post"
-          @like="handleLike"
-          @comment="handleComment"
-          @preview="handlePreview"
-          @delete="handleDelete"
-          @follow="handleFollow"
-        />
-      </view>
+      <!-- 文章卡片 -->
+      <view class="article-list" v-else-if="articleList.length">
+        <view
+          class="article-card pet-press"
+          v-for="item in articleList"
+          :key="item.id"
+          @click="goArticleDetail(item.id)"
+        >
+          <image
+            v-if="item.coverImage"
+            class="article-thumb"
+            :src="fullImageUrl(item.coverImage)"
+            mode="aspectFill"
+          />
+          <view v-else class="article-thumb article-thumb--empty">
+            <Icon name="file_text" :size="26" color="#FFC8A2" />
+          </view>
 
-      <!-- 加载更多 -->
-      <view v-if="postList.length" class="load-more">
-        <view v-if="loadStatus === 'loading'" class="load-more-state">
-          <text class="load-paw-sm">🐾</text>
-          <text class="load-text">努力加载中...</text>
-        </view>
-        <text v-else-if="loadStatus === 'nomore'" class="load-text nomore-text">
-          ─ 已经到底啦，没有更多动态 ─
-        </text>
-        <view v-else-if="loadStatus === 'loadmore'" class="load-more-btn" @click="loadMore">
-          <text class="load-more-text">加载更多</text>
-        </view>
-      </view>
-
-      <!-- 空状态：引导发布 -->
-      <view v-if="!loading && !postList.length" class="empty-wrap">
-        <view class="empty-art">🐕‍🦺</view>
-        <text class="empty-title">还没有动态哦~</text>
-        <text class="empty-desc">快来发布第一条动态，记录毛孩子的高光时刻吧！</text>
-        <view class="empty-btn pet-press" @click="goPublish">
-          <text class="empty-btn-text">📝 发布第一条动态</text>
+          <view class="article-info">
+            <text class="article-title pet-line2">{{ item.title }}</text>
+            <text class="article-summary pet-line2" v-if="item.summary">{{ item.summary }}</text>
+            <view class="article-meta">
+              <text v-if="item.category" class="meta-chip">{{ item.category }}</text>
+              <text v-if="petLabel(item)" class="meta-chip meta-chip--pet">{{ petLabel(item) }}</text>
+              <text class="meta-time">{{ formatDateTime(item.createTime) }}</text>
+            </view>
+          </view>
         </view>
       </view>
-    </view>
 
-    <!-- ========== 发布动态悬浮按钮 ========== -->
-    <view class="fab-btn pet-press" @click="goPublish">
-      <Icon name="plus" :size="28" color="#fff" />
+      <!-- 加载更多 / 到底提示 -->
+      <view class="list-foot" v-if="articleList.length">
+        <view class="foot-loading" v-if="articleLoadingMore">
+          <Icon name="reload" :size="15" color="#FF8C42" />
+          <text class="foot-text">正在加载更多...</text>
+        </view>
+        <view class="foot-end-wrap" v-else-if="articleFinished">
+          <text class="foot-text foot-end">— 到底啦 —</text>
+          <view class="foot-more pet-press" @click="goArticleList">
+            <text class="foot-more-text">查看更多养宠知识</text>
+            <Icon name="chevron_right" :size="14" color="#FF8C42" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="empty-wrap" v-else>
+        <view class="empty-art">
+          <Icon name="file_text" :size="44" color="#FFB07A" />
+        </view>
+        <text class="empty-title">知识文章正在筹备中</text>
+        <text class="empty-desc">我们会尽快为你准备实用的养宠内容，先去记录爱宠的档案吧~</text>
+        <view class="empty-btn pet-press" @click="goPetList">
+          <text class="empty-btn-text">去添加爱宠</text>
+        </view>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
-import PostCard from '@/components/PostCard.vue';
 import Icon from '@/components/Icon.vue';
-import { getPostList, likePost, deletePost } from '@/api/post.js';
+import { getArticleList } from '@/api/article.js';
 import { getBannerList } from '@/api/banner.js';
-import { showToast, fullImageUrl } from '@/utils/index.js';
+import { showToast, formatDateTime, fullImageUrl } from '@/utils/index.js';
+import { requireLogin } from '@/utils/auth.js';
 import { useUserStore } from '@/store/user.js';
+import { usePetStore } from '@/store/pet.js';
+import { features } from '@/config/features.js';
+import { isRecommendablePetType, petTypeLabel } from '@/config/petTypes.js';
 
 const userStore = useUserStore();
+const petStore = usePetStore();
 
 /** 导航栏与状态栏相关尺寸（px） */
 const navBarHeight = ref(44);
@@ -159,18 +188,7 @@ try {
 } catch (e) {}
 // #endif
 
-const postList = ref([]);
-const loading = ref(false);
-const loadStatus = ref('loadmore');
-const pageParams = ref({ pageNum: 1, pageSize: 10 });
-
-const currentTab = ref('recommend');
-const tabList = ref([
-  { key: 'recommend', label: '推荐' },
-  { key: 'follow', label: '关注' },
-  { key: 'latest', label: '最新' },
-]);
-
+/* ==================== 轮播图 ==================== */
 const bannerList = ref([]);
 const currentBanner = ref(0);
 
@@ -179,7 +197,6 @@ const goTop = () => {
   uni.pageScrollTo({ scrollTop: 0, duration: 300 });
 };
 
-/** 获取启用的轮播图列表（已按 sortOrder 升序、ID 降序排列） */
 const fetchBannerList = async () => {
   try {
     const res = await getBannerList();
@@ -193,8 +210,10 @@ const onSwiperChange = (e) => {
   currentBanner.value = e.detail.current;
 };
 
-// 点击轮播图：根据 jumpType 跳转
-// none-不跳转 post-动态详情 product-商品详情 url-外部链接 miniapp-小程序页面
+/**
+ * 点击轮播图：根据 jumpType 跳转
+ * none-不跳转 article-知识文章 product-商品详情 url-外部链接 miniapp-小程序页面
+ */
 const onBannerClick = (banner) => {
   if (!banner) return;
   const { jumpType, jumpTarget } = banner;
@@ -203,16 +222,14 @@ const onBannerClick = (banner) => {
     case undefined:
     case null:
       break;
-    case 'post':
-      uni.navigateTo({ url: `/pages/index/detail?id=${jumpTarget}` });
+    case 'article':
+      if (jumpTarget) uni.navigateTo({ url: `/pages/article/detail?id=${jumpTarget}` });
       break;
     case 'product':
       uni.navigateTo({ url: `/pages/shop/detail?id=${jumpTarget}` });
       break;
     case 'miniapp':
-      if (jumpTarget) {
-        uni.navigateTo({ url: jumpTarget });
-      }
+      if (jumpTarget) uni.navigateTo({ url: jumpTarget });
       break;
     case 'url':
       if (jumpTarget) {
@@ -226,127 +243,175 @@ const onBannerClick = (banner) => {
   }
 };
 
-const focusSearch = () => {
-  uni.navigateTo({ url: '/pages/search/index' });
-};
-
-const switchTab = (key) => {
-  if (currentTab.value === key) return;
-  currentTab.value = key;
-  fetchPostList(true);
-};
-
-const fetchPostList = async (isRefresh = false) => {
-  if (isRefresh) {
-    pageParams.value.pageNum = 1;
+/* ==================== 快捷工具 ==================== */
+const toolList = computed(() => {
+  const list = [
+    { key: 'pets', name: '宠物档案', icon: 'pet', color: '#FF8C42', bg: '#FFF0E6', path: '/pages/pet/list', tab: true, login: true },
+    { key: 'vaccine', name: '疫苗提醒', icon: 'vaccine', color: '#4CAF7D', bg: '#E8F7EB', path: '/pages/pet/health', login: true },
+    { key: 'weight', name: '体重记录', icon: 'weight', color: '#3D9BE9', bg: '#E5F4FF', path: '/pages/pet/weight', login: true },
+    { key: 'shop', name: '积分商城', icon: 'gift', color: '#E8A33D', bg: '#FFF7DE', path: '/pages/shop/index', tab: true },
+  ];
+  // 养宠助手受功能开关控制，提审期间关闭入口
+  if (features.adviserEnabled !== false) {
+    list.splice(3, 0, {
+      key: 'chat', name: 'AI助手', icon: 'chat', color: '#8A7BE0', bg: '#F0EBFF',
+      path: '/pages/chat/index', login: true,
+    });
   }
-  loading.value = true;
-  loadStatus.value = 'loading';
-  try {
-    // 传递 tab 参数给后端：recommend 推荐 / follow 关注 / latest 最新
-    const res = await getPostList({ ...pageParams.value, tab: currentTab.value });
-    const list = res.rows || [];
-    if (isRefresh) {
-      postList.value = list;
-    } else {
-      postList.value = [...postList.value, ...list];
-    }
-    loadStatus.value = list.length < pageParams.value.pageSize ? 'nomore' : 'loadmore';
-  } catch (err) {
-    loadStatus.value = 'loadmore';
-    console.error('获取动态失败:', err);
-  } finally {
-    loading.value = false;
-  }
-};
+  return list;
+});
 
-const loadMore = () => {
-  if (loadStatus.value === 'nomore' || loadStatus.value === 'loading') return;
-  pageParams.value.pageNum++;
-  fetchPostList();
-};
-
-const handleLike = async (id) => {
-  try {
-    const res = await likePost(id);
-    const post = postList.value.find((p) => p.id === id);
-    if (post) {
-      const nowLiked = res.liked !== undefined ? res.liked : !post.isLike;
-      post.isLike = nowLiked;
-      post.likeCount = (post.likeCount || 0) + (nowLiked ? 1 : -1);
-      if (post.likeCount < 0) post.likeCount = 0;
-    }
-  } catch (err) {
-    showToast(err?.msg || '操作失败');
-  }
-};
-
-const handleFollow = ({ userId, followed }) => {
-  postList.value.forEach((p) => {
-    if (p.userId === userId) p.isFollowed = followed;
-  });
-};
-
-const handleComment = (id) => {
-  uni.navigateTo({ url: `/pages/index/detail?id=${id}` });
-};
-
-const handlePreview = ({ images, current }) => {
-  if (!images || !images.length) return;
-  uni.previewImage({ urls: images, current: images[current] || images[0] });
-};
-
-const handleDelete = (id) => {
-  uni.showModal({
-    title: '删除提示',
-    content: '确定删除这条动态吗？删除后不可恢复哦~',
-    confirmColor: '#FF6B6B',
-    success: async (res) => {
-      if (res.confirm) {
-        try {
-          await deletePost(id);
-          postList.value = postList.value.filter((p) => p.id !== id);
-          showToast('已删除', 'success');
-        } catch (err) {
-          showToast(err?.msg || '删除失败');
-        }
-      }
-    },
-  });
-};
-
-const goPublish = () => {
-  const token = uni.getStorageSync('token');
-  if (!token) {
-    showToast('请先登录');
-    uni.switchTab({ url: '/pages/mine/index' });
+const handleToolClick = async (tool) => {
+  if (tool.login && !(await requireLogin(`使用「${tool.name}」`))) return;
+  if (tool.tab) {
+    uni.switchTab({ url: tool.path });
     return;
   }
-  uni.navigateTo({ url: '/pages/index/publish' });
+  uni.navigateTo({ url: tool.path });
 };
 
-onMounted(() => {
-  fetchBannerList();
-  fetchPostList(true);
+/* ==================== 养宠知识（兴趣推荐 + 触底加载） ==================== */
+/** 首页每次加载的条数 */
+const ARTICLE_PAGE_SIZE = 5;
+
+const articleList = ref([]);
+const articleLoading = ref(false);      // 首次加载 / 下拉刷新
+
+/** 适用宠物文案（文章按宠物种类分类，与主题分类是两个维度） */
+const petLabel = (item) => petTypeLabel(item?.petType, '');
+const articleLoadingMore = ref(false);  // 触底追加加载
+const articleFinished = ref(false);     // 是否已无更多数据
+const articlePageNum = ref(1);
+const articlePetType = ref('');         // 本次推荐命中的宠物类型（cat/dog），空串表示不做个性化
+
+/**
+ * 解析用于兴趣推荐的宠物类型
+ *
+ * 取用户第一只猫或狗的类型；未登录、没有宠物、或宠物类型为"其他"时返回空串，
+ * 由后端按平台默认排序返回（即不做个性化的随机推荐）。
+ */
+const resolveInterestPetType = async () => {
+  if (!userStore.isLogin) return '';
+  try {
+    if (!petStore.petList.length) {
+      await petStore.fetchPetList();
+    }
+  } catch (e) {
+    return '';
+  }
+  const hit = (petStore.petList || []).find((p) => isRecommendablePetType(p.petType));
+  return hit ? hit.petType : '';
+};
+
+/** 拉取第一页文章 */
+const fetchArticleList = async () => {
+  articleLoading.value = true;
+  articleLoadingMore.value = false;
+  articleFinished.value = false;
+  articlePageNum.value = 1;
+  try {
+    articlePetType.value = await resolveInterestPetType();
+    const res = await getArticleList({
+      pageNum: 1,
+      pageSize: ARTICLE_PAGE_SIZE,
+      petType: articlePetType.value || undefined,
+    });
+    const rows = res.rows || [];
+    articleList.value = rows;
+    // 到底判定以接口返回的 total 为准：
+    // RuoYi 的 PageHelper 默认开启"分页参数合理化"，pageNum 超过总页数时会回退到
+    // 最后一页、再次返回同一批数据，因此只看"本页不足一页"永远触发不了到底。
+    const total = Number(res.total);
+    if (Number.isFinite(total) && total > 0) {
+      articleFinished.value = articleList.value.length >= total;
+    } else {
+      articleFinished.value = rows.length < ARTICLE_PAGE_SIZE;
+    }
+  } catch (err) {
+    console.error('获取养宠知识失败:', err);
+    articleList.value = [];
+    articleFinished.value = true;
+  } finally {
+    articleLoading.value = false;
+  }
+};
+
+/** 触底加载下一页 */
+const loadMoreArticles = async () => {
+  if (articleLoading.value || articleLoadingMore.value || articleFinished.value) return;
+  articleLoadingMore.value = true;
+  try {
+    const nextPage = articlePageNum.value + 1;
+    const res = await getArticleList({
+      pageNum: nextPage,
+      pageSize: ARTICLE_PAGE_SIZE,
+      petType: articlePetType.value || undefined,
+    });
+    const rows = res.rows || [];
+    if (rows.length) {
+      // 按 id 去重后再追加：后端分页合理化可能把最后一页重复返回，前端再兜一层
+      const existing = new Set(articleList.value.map((item) => item.id));
+      articleList.value = articleList.value.concat(rows.filter((item) => !existing.has(item.id)));
+      articlePageNum.value = nextPage;
+    }
+    const total = Number(res.total);
+    if (Number.isFinite(total) && total > 0) {
+      articleFinished.value = articleList.value.length >= total;
+    } else {
+      articleFinished.value = rows.length < ARTICLE_PAGE_SIZE;
+    }
+  } catch (err) {
+    console.error('加载更多养宠知识失败:', err);
+    // 出错时停止继续加载，避免用户一直下拉空转
+    articleFinished.value = true;
+  } finally {
+    articleLoadingMore.value = false;
+  }
+};
+
+/** 区块副标题：命中兴趣时提示专属推荐 */
+const articleSectionSub = computed(() => {
+  if (articlePetType.value === 'cat') return '猫咪专属 · 只读浏览';
+  if (articlePetType.value === 'dog') return '狗狗专属 · 只读浏览';
+  return '平台精选 · 只读浏览';
 });
+
+/** 查看更多 → 养宠知识列表页 */
+const goArticleList = () => uni.navigateTo({ url: '/pages/article/list' });
+const goArticleDetail = (id) => uni.navigateTo({ url: `/pages/article/detail?id=${id}` });
+/** 首页搜索框 → 搜索页（保留搜索历史） */
+const goSearch = () => uni.navigateTo({ url: '/pages/search/index' });
+const goPetList = () => uni.switchTab({ url: '/pages/pet/list' });
+
+/* ==================== 生命周期 ==================== */
+let articleLoadedOnce = false;
+let lastLoginState = null;
 
 onShow(async () => {
   if (userStore.isLogin && !userStore.userInfo) {
     try { await userStore.fetchUserInfo(); } catch (e) {}
   }
-  fetchPostList(true);
+  fetchBannerList();
+  // 首次进入、或登录状态发生变化（宠物数据可能随之变化）时重新拉取推荐，
+  // 从文章详情返回首页则保留已加载的进度，不回到第一页
+  if (!articleLoadedOnce || lastLoginState !== userStore.isLogin) {
+    articleLoadedOnce = true;
+    lastLoginState = userStore.isLogin;
+    fetchArticleList();
+  }
+});
+
+/** 触底加载更多养宠知识 */
+onReachBottom(() => {
+  loadMoreArticles();
 });
 
 onPullDownRefresh(async () => {
   try {
-    await Promise.all([fetchBannerList(), fetchPostList(true)]);
+    await Promise.all([fetchBannerList(), fetchArticleList()]);
   } finally {
     uni.stopPullDownRefresh();
   }
-});
-
-onReachBottom(() => {
-  loadMore();
 });
 </script>
 
@@ -354,7 +419,7 @@ onReachBottom(() => {
 .home-page {
   min-height: 100vh;
   background-color: $bg-page;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 160rpx);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 60rpx);
 }
 
 /* ========== 毛玻璃吸顶导航 ========== */
@@ -437,7 +502,6 @@ onReachBottom(() => {
   }
 }
 
-/* ===== 轮播区 ===== */
 .banner-wrap {
   position: relative;
   margin: 0 24rpx;
@@ -498,7 +562,6 @@ onReachBottom(() => {
     }
   }
 
-  /* 自定义指示器：圆点 + 当前胶囊拉长 */
   .banner-dots {
     position: absolute;
     left: 0;
@@ -547,51 +610,208 @@ onReachBottom(() => {
 
 /* ========== 内容区 ========== */
 .content-area {
-  padding-top: 24rpx;
+  padding: 24rpx 0 0;
 }
 
-/* ===== 分段 Tab ===== */
-.feed-tabs {
+/* ===== 快捷工具 ===== */
+.tool-card {
   display: flex;
-  align-items: center;
-  margin: 0 24rpx 24rpx;
-  padding: 8rpx;
-  border-radius: $radius-round;
-  background-color: rgba(255, 255, 255, 0.92);
-  box-shadow: $shadow-sm;
+  align-items: flex-start;
+  margin: 0 24rpx 28rpx;
+  padding: 32rpx 12rpx 24rpx;
+  border-radius: $radius-lg;
+  background-color: #fff;
+  box-shadow: $shadow-card;
 
-  .feed-tab {
+  .tool-item {
     flex: 1;
-    height: 72rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14rpx;
+
+    &:active {
+      opacity: 0.72;
+    }
+  }
+
+  .tool-icon {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: 28rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: $radius-round;
-    transition: all 0.3s ease;
+  }
 
-    .tab-text {
-      font-size: $font-md;
-      color: $text-secondary;
-      font-weight: $font-weight-medium;
-      transition: color 0.3s ease;
+  .tool-name {
+    font-size: $font-xs;
+    color: $text-secondary;
+    font-weight: $font-weight-medium;
+  }
+}
+
+/* ===== 区块标题 ===== */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 32rpx 20rpx;
+
+  .section-title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 14rpx;
+
+    .section-title {
+      font-size: 36rpx;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
     }
 
-    &.active {
-      background: $gradient-primary;
-      box-shadow: $shadow-primary;
+    .section-sub {
+      font-size: $font-xs;
+      color: $text-hint;
+    }
+  }
 
-      .tab-text {
-        color: $text-white;
-        font-weight: $font-weight-bold;
+  .section-more {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+
+    .more-text {
+      font-size: $font-sm;
+      color: $primary;
+    }
+  }
+}
+
+/* ===== 文章卡片 ===== */
+.article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 0 24rpx;
+}
+
+.article-card {
+  display: flex;
+  gap: 22rpx;
+  padding: 24rpx;
+  border-radius: $radius-lg;
+  background-color: #fff;
+  box-shadow: $shadow-card;
+  animation: pet-fadeInUp 0.36s ease both;
+
+  .article-thumb {
+    width: 200rpx;
+    height: 148rpx;
+    border-radius: $radius-md;
+    flex-shrink: 0;
+    background-color: $bg-input;
+
+    &--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: $gradient-card;
+    }
+  }
+
+  .article-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+
+    .article-title {
+      font-size: $font-md;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      line-height: 1.45;
+    }
+
+    .article-summary {
+      margin-top: 10rpx;
+      font-size: $font-xs;
+      color: $text-secondary;
+      line-height: 1.6;
+    }
+
+    .article-meta {
+      display: flex;
+      align-items: center;
+      gap: 14rpx;
+      margin-top: auto;
+      padding-top: 14rpx;
+
+      .meta-chip {
+        font-size: $font-xs;
+        color: $primary-dark;
+        background: $primary-lighter;
+        padding: 2rpx 14rpx;
+        border-radius: $radius-round;
+
+        /* 适用宠物：与主题分类（喂养/健康）区分开，用另一套配色 */
+        &.meta-chip--pet {
+          color: #4F9E62;
+          background: #E8F6E9;
+        }
+      }
+
+      .meta-time {
+        font-size: $font-xs;
+        color: $text-hint;
       }
     }
   }
 }
 
-/* ===== 动态列表 ===== */
-.feed-list {
+/* ===== 加载更多 / 到底提示 ===== */
+.list-foot {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  padding: 32rpx 24rpx 8rpx;
+
+  .foot-loading {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    animation: pet-breath 1.6s ease-in-out infinite;
+  }
+
+  .foot-text {
+    font-size: $font-xs;
+    color: $text-hint;
+  }
+
+  .foot-end-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18rpx;
+  }
+
+  .foot-end {
+    color: $text-placeholder;
+  }
+
+  .foot-more {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+    padding: 12rpx 32rpx;
+    border-radius: $radius-round;
+    background-color: #fff;
+    box-shadow: $shadow-sm;
+
+    .foot-more-text {
+      font-size: $font-sm;
+      color: $primary;
+    }
+  }
 }
 
 /* ===== 首次加载 ===== */
@@ -599,70 +819,21 @@ onReachBottom(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 160rpx 0 100rpx;
+  padding: 90rpx 0 70rpx;
 
   .loading-paw {
-    width: 96rpx;
-    height: 96rpx;
+    width: 80rpx;
+    height: 80rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 56rpx;
-    animation: pet-spin 1.2s linear infinite;
+    animation: pet-breath 1.6s ease-in-out infinite;
   }
 
   .loading-text {
-    margin-top: 28rpx;
+    margin-top: 22rpx;
     font-size: $font-sm;
     color: $text-hint;
-    animation: pet-breath 1.6s ease-in-out infinite;
-  }
-}
-
-/* ===== 加载更多 ===== */
-.load-more {
-  display: flex;
-  justify-content: center;
-  padding: 20rpx 0 40rpx;
-
-  .load-more-state {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-
-    .load-paw-sm {
-      font-size: $font-md;
-      animation: pet-spin 1.2s linear infinite;
-      display: inline-flex;
-    }
-
-    .load-text {
-      font-size: $font-sm;
-      color: $text-hint;
-    }
-  }
-
-  .load-text.nomore-text {
-    font-size: $font-sm;
-    color: $text-hint;
-  }
-
-  .load-more-btn {
-    padding: 14rpx 52rpx;
-    border-radius: $radius-round;
-    background: $primary-lighter;
-    transition: all 0.3s ease;
-
-    &:active {
-      transform: scale(0.96);
-      opacity: 0.8;
-    }
-
-    .load-more-text {
-      font-size: $font-sm;
-      color: $primary;
-      font-weight: $font-weight-medium;
-    }
   }
 }
 
@@ -671,7 +842,7 @@ onReachBottom(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 120rpx 72rpx 160rpx;
+  padding: 90rpx 72rpx 120rpx;
 
   .empty-art {
     width: 180rpx;
@@ -681,7 +852,6 @@ onReachBottom(() => {
     justify-content: center;
     border-radius: 50%;
     background: $gradient-card;
-    font-size: 88rpx;
     box-shadow: $shadow-md;
     animation: pet-float 3s ease-in-out infinite;
   }
@@ -713,27 +883,6 @@ onReachBottom(() => {
       color: $text-white;
       font-weight: $font-weight-medium;
     }
-  }
-}
-
-/* ===== 悬浮发布按钮 ===== */
-.fab-btn {
-  position: fixed;
-  right: 40rpx;
-  bottom: calc(env(safe-area-inset-bottom) + 72rpx);
-  width: 108rpx;
-  height: 108rpx;
-  background: $gradient-primary;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: $shadow-primary;
-  z-index: 300;
-  animation: pet-pulse 2.4s ease-out infinite;
-
-  &:active {
-    transform: scale(0.9);
   }
 }
 </style>

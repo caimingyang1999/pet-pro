@@ -1,125 +1,155 @@
 <template>
-  <text
-    class="iconfont"
-    :style="iconStyle"
-  >{{ glyph }}</text>
+  <uni-icons
+    class="app-icon"
+    :type="iconType"
+    :size="size"
+    :color="color || 'inherit'"
+  />
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue';
 
+/**
+ * 全局统一图标组件
+ *
+ * 底层使用 uni-app 官方图标组件 uni-icons（@dcloudio/uni-ui），
+ * 字体文件随包内置，不依赖任何远程 CDN，小程序端与 H5 端表现一致。
+ *
+ * 对外保持原有 `name / size / color` 三个属性的调用方式，
+ * 语义化名称（如 chevron_right、heart_fill）通过 ICON_MAP 映射到 uni-icons 的 type，
+ * 也支持直接传入 uni-icons 原生 type（如 'home-filled'）透传使用。
+ */
 const props = defineProps({
+  /** 图标名称（本组件语义化名称，或 uni-icons 原生 type） */
   name: { type: String, required: true },
+  /** 图标尺寸：数字按 px 处理，也可传 '32rpx' 这类带单位字符串 */
   size: { type: [String, Number], default: 24 },
+  /** 图标颜色，不传则继承父级文字颜色 */
   color: { type: String, default: '' },
 });
 
-// 阿里巴巴 iconfont 常用图标映射（使用 Unicode 码点）
-// 当 iconfont 字体未加载时，退化为 emoji 显示
+/**
+ * 语义化名称 → uni-icons type 映射表
+ * 左值为项目内沿用的图标名，右值为 uni-icons 官方图标名
+ */
 const ICON_MAP = {
-  home: { code: '\ue8c6', fallback: '🏠' },
-  home_fill: { code: '\ue8c4', fallback: '🏡' },
-  shop: { code: '\ue8c9', fallback: '🛍' },
-  shop_fill: { code: '\ue8c5', fallback: '🏪' },
-  pet: { code: '\ue8ca', fallback: '🐾' },
-  pet_fill: { code: '\ue8cb', fallback: '�' },
-  user: { code: '\ue8c2', fallback: '👤' },
-  user_fill: { code: '\ue8c3', fallback: '🧑' },
-  search: { code: '\ue8cc', fallback: '🔍' },
-  heart: { code: '\ue8d4', fallback: '🤍' },
-  heart_fill: { code: '\ue8d3', fallback: '❤️' },
-  like: { code: '\ue8d5', fallback: '👍' },
-  message: { code: '\ue8d8', fallback: '💬' },
-  chat: { code: '\ue8d8', fallback: '💬' },
-  comment: { code: '\ue8d9', fallback: '💭' },
-  plus: { code: '\ue8d2', fallback: '➕' },
-  camera: { code: '\ue8d0', fallback: '�' },
-  edit: { code: '\ue8e0', fallback: '✏️' },
-  edit_pen: { code: '\ue8e0', fallback: '✏️' },
-  trash: { code: '\ue8df', fallback: '🗑' },
-  arrow_right: { code: '\ue8de', fallback: '➡️' },
-  close: { code: '\ue8d7', fallback: '✕' },
-  bell: { code: '\ue8d6', fallback: '🔔' },
-  star: { code: '\ue8d1', fallback: '⭐' },
-  star_fill: { code: '\ue8d0', fallback: '🌟' },
-  file_text: { code: '\ue8e2', fallback: '📄' },
-  shopping: { code: '\ue8e3', fallback: '🛒' },
-  location: { code: '\ue8e1', fallback: '📍' },
-  settings: { code: '\ue8e4', fallback: '⚙️' },
-  info: { code: '\ue8e5', fallback: 'ℹ️' },
-  headphone: { code: '\ue8e6', fallback: '🎧' },
-  weixin: { code: '\ue8e7', fallback: '�' },
-  share: { code: '\ue8e8', fallback: '📤' },
-  eye: { code: '\ue8e9', fallback: '�' },
-  mail: { code: '\ue8ea', fallback: '✉️' },
-  phone: { code: '\ue8eb', fallback: '📱' },
-  chevron_right: { code: '\ue8de', fallback: '›' },
-  chevron_left: { code: '\ue8f9', fallback: '‹' },
-  chevron_down: { code: '\ue8ed', fallback: '‹' },
-  refresh: { code: '\ue8ee', fallback: '🔄' },
-  gift: { code: '\ue8ef', fallback: '🎁' },
-  medal: { code: '\ue8f0', fallback: '�' },
-  fire: { code: '\ue8f1', fallback: '🔥' },
-  paw: { code: '\ue8ca', fallback: '🐾' },
-  paw_fill: { code: '\ue8cb', fallback: '🐶' },
-  more: { code: '\ue8f2', fallback: '⋯' },
-  logout: { code: '\ue8f3', fallback: '🚪' },
-  order: { code: '\ue8f4', fallback: '📋' },
-  address: { code: '\ue8e1', fallback: '📍' },
-  dog_bone: { code: '\ue8f5', fallback: '🦴' },
-  vaccine: { code: '\ue8f6', fallback: '💉' },
-  weight: { code: '\ue8f7', fallback: '⚖️' },
-  cake: { code: '\ue8f8', fallback: '🎂' },
-  back: { code: '\ue8f9', fallback: '⬅️' },
-  home_circle: { code: '\ue8fa', fallback: '🏠' },
-  home_outline: { code: '\ue8fb', fallback: '�' },
-  like_circle: { code: '\ue8fc', fallback: '�' },
-  user_circle: { code: '\ue8fd', fallback: '�' },
-  paw_circle: { code: '\ue8fe', fallback: '�' },
-  shop_circle: { code: '\ue8ff', fallback: '🛍' },
+  /* ---------- 导航 / 通用 ---------- */
+  back: 'arrow-left',
+  arrow_left: 'arrow-left',
+  arrow_right: 'arrow-right',
+  chevron_left: 'left',
+  chevron_right: 'right',
+  chevron_down: 'down',
+  chevron_up: 'up',
+  home: 'home',
+  home_fill: 'home-filled',
+  home_outline: 'home',
+  shop: 'shop',
+  shop_fill: 'shop-filled',
+  shop_circle: 'shop-filled',
+  user: 'person',
+  user_fill: 'person-filled',
+  user_circle: 'person-filled',
+  search: 'search',
+  plus: 'plus-filled',
+  plus_empty: 'plus',
+  minus: 'minus-filled',
+  close: 'closeempty',
+  close_circle: 'clear',
+  more: 'more-filled',
+  refresh: 'refreshempty',
+  reload: 'reload',
+  undo: 'undo',
+  redo: 'redo',
+  settings: 'gear-filled',
+  tune: 'tune',
+  list: 'list',
+  bars: 'bars',
+  scan: 'scan',
+  navigate: 'navigate-filled',
+  paperclip: 'paperclip',
+
+  /* ---------- 互动 / 社交 ---------- */
+  heart: 'heart',
+  heart_fill: 'heart-filled',
+  like: 'hand-up',
+  unlike: 'hand-down',
+  message: 'chatbubble',
+  comment: 'chatbubble-filled',
+  chat: 'chatboxes',
+  chat_fill: 'chatboxes-filled',
+  share: 'paperplane',
+  send: 'paperplane',
+  forward: 'redo',
+  star: 'star',
+  star_fill: 'star-filled',
+  bell: 'notification-filled',
+  notification: 'notification',
+  contact: 'contact-filled',
+  personadd: 'personadd',
+
+  /* ---------- 内容 / 编辑 ---------- */
+  file_text: 'list',
+  edit: 'compose',
+  trash: 'trash',
+  camera: 'camera-filled',
+  image: 'image',
+  images: 'images',
+  eye: 'eye',
+  eye_off: 'eye-slash',
+  locked: 'locked-filled',
+  mail: 'email-filled',
+  phone: 'phone-filled',
+  location: 'location-filled',
+  address: 'location-filled',
+  map: 'map-filled',
+  calendar: 'calendar-filled',
+  cake: 'calendar-filled',
+  flag: 'flag-filled',
+  info: 'info-filled',
+  help: 'help-filled',
+  headphone: 'headphones',
+  logout: 'undo',
+  check: 'checkmarkempty',
+  checkbox: 'checkbox-filled',
+  circle: 'circle',
+  circle_fill: 'circle-filled',
+  vip: 'vip-filled',
+  wallet: 'wallet-filled',
+  weixin: 'weixin',
+  font: 'font',
+
+  /* ---------- 业务 ---------- */
+  gift: 'gift-filled',
+  fire: 'fire-filled',
+  medal: 'medal-filled',
+  order: 'cart-filled',
+  cart: 'cart-filled',
+  shopping: 'cart-filled',
+
+  /* ---------- 宠物主题（uni-icons 无宠物图标，取语义最接近的填充图标） ---------- */
+  pet: 'heart-filled',
+  pet_fill: 'heart-filled',
+  paw: 'heart-filled',
+  paw_fill: 'heart-filled',
+  paw_circle: 'heart-filled',
+  dog_bone: 'star-filled',
+  vaccine: 'medal-filled',
+  weight: 'tune',
 };
 
-// 检测 iconfont 是否已加载
-const isIconFontLoaded = () => {
-  if (typeof document === 'undefined') return false;
-  const testEl = document.createElement('span');
-  testEl.className = 'iconfont';
-  testEl.style.visibility = 'hidden';
-  testEl.style.position = 'absolute';
-  testEl.textContent = ICON_MAP.home.code;
-  document.body.appendChild(testEl);
-  const loaded = testEl.offsetWidth > 0 && testEl.offsetWidth < 50;
-  document.body.removeChild(testEl);
-  return loaded;
-};
-
-const glyph = computed(() => {
-  const icon = ICON_MAP[props.name];
-  if (!icon) return '⭐';
-  // 如果 iconfont 已加载则返回 Unicode，否则降级为 emoji
-  if (typeof document !== 'undefined' && isIconFontLoaded()) {
-    return icon.code;
-  }
-  return icon.fallback;
-});
-
-const iconStyle = computed(() => ({
-  fontSize: typeof props.size === 'number' ? `${props.size}px` : props.size,
-  color: props.color || 'inherit',
-  lineHeight: 1,
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}));
+/** 最终传给 uni-icons 的 type：命中映射表则取映射值，否则按原生 type 透传 */
+const iconType = computed(() => ICON_MAP[props.name] || props.name);
 </script>
 
 <style lang="scss" scoped>
-.iconfont {
-  font-family: "iconfont", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  font-style: normal;
-  line-height: 1;
+.app-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
 }
 </style>

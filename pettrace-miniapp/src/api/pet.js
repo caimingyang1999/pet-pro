@@ -17,7 +17,8 @@ export function getPetDetail(petId) {
 
 /**
  * 添加宠物
- * @param {Object} data - { name, avatar, breed, birthday, gender, weight, color, sterilization, remark, vaccineList }
+ * @param {Object} data - { name, avatar, petType, breed, birthday, gender, weight, color, sterilization, remark, vaccineList }
+ *                        petType：cat-猫 dog-狗 other-其他（用于首页养宠知识兴趣推荐）
  */
 export function addPet(data) {
   return post('/pets', data);
@@ -26,7 +27,7 @@ export function addPet(data) {
 /**
  * 更新宠物
  * @param {number|string} petId
- * @param {Object} data - { name, avatar, breed, birthday, gender, weight, color, sterilization, remark, vaccineList }
+ * @param {Object} data - { name, avatar, petType, breed, birthday, gender, weight, color, sterilization, remark, vaccineList }
  */
 export function updatePet(petId, data) {
   return put(`/pets/${petId}`, data);

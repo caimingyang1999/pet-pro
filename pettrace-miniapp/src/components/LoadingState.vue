@@ -17,8 +17,8 @@
       class="skeleton-card"
       :class="`skeleton-${type}`"
     >
-      <!-- 动态类型骨架 -->
-      <template v-if="type === 'post'">
+      <!-- 列表类型骨架 -->
+      <template v-if="type === 'list'">
         <view class="post-header">
           <view class="skeleton-avatar" />
           <view class="post-info">
@@ -67,7 +67,7 @@ const props = defineProps({
     type: String,
     default: 'spinner',
   },
-  // 骨架屏类型：post（动态） | product（商品） | pet（宠物）
+  // 骨架屏类型：list（列表） | product（商品） | pet（宠物）
   type: {
     type: String,
     default: 'post',
@@ -155,7 +155,7 @@ const props = defineProps({
   100% { background-position: 200% 0; }
 }
 
-/* ============ 动态类型骨架 ============ */
+/* ============ 列表类型骨架 ============ */
 .skeleton-post {
   .post-header {
     display: flex;

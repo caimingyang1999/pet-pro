@@ -59,6 +59,8 @@ swagger:
 ai:
   chat:
     base-url: ${AI_CHAT_BASE_URL:http://127.0.0.1:3300}
+  article:
+    base-url: ${AI_ARTICLE_BASE_URL:http://127.0.0.1:3300}
 
 # 日志级别（生产环境调低）
 logging:

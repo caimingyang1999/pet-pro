@@ -1,94 +1,158 @@
 <template>
   <view class="search-page">
-    <!-- 顶部搜索栏（适配状态栏） -->
-    <view class="search-header" :style="{ paddingTop: navBarHeight + 'px' }">
-      <view class="search-bar">
-        <view class="search-input-wrap">
-          <Icon name="search" :size="16" color="#999" />
+    <!-- 自定义导航栏：搜索输入 -->
+    <view class="search-nav" :style="{ paddingTop: navBarHeight + 'px' }">
+      <view class="nav-inner">
+        <view class="search-box">
+          <Icon name="search" :size="16" color="#FF8C42" />
           <input
+            v-model="keyword"
             class="search-input"
             type="text"
-            v-model="keyword"
-            placeholder="搜索动态内容、用户昵称"
-            placeholder-class="search-placeholder"
             confirm-type="search"
+            placeholder="搜索养宠知识"
+            placeholder-class="input-placeholder"
+            :focus="autoFocus"
             @confirm="onSearch"
-            focus
           />
           <view v-if="keyword" class="clear-btn" @click="clearKeyword">
-            <Icon name="close" :size="14" color="#999" />
+            <Icon name="close_circle" :size="16" color="#C0C4CC" />
           </view>
         </view>
         <text class="cancel-btn" @click="onCancel">取消</text>
       </view>
     </view>
 
-    <!-- 搜索结果 -->
-    <view class="result-wrap" v-if="hasSearched">
-      <!-- 动态 tab -->
-      <view class="result-tabs">
-        <view
-          class="result-tab"
-          :class="{ active: resultTab === 'post' }"
-          @click="resultTab = 'post'"
-        >
-          <text>动态</text>
-        </view>
-        <view
-          class="result-tab"
-          :class="{ active: resultTab === 'user' }"
-          @click="resultTab = 'user'"
-        >
-          <text>用户</text>
-        </view>
-      </view>
-
-      <!-- 动态结果 -->
-      <view v-if="resultTab === 'post'">
-        <PostCard
-          v-for="post in postList"
-          :key="post.id"
-          :post="post"
-          @like="handleLike"
-          @comment="handleComment"
-          @preview="handlePreview"
-          @delete="handleDelete"
-        />
-        <view v-if="!postList.length" class="empty-wrap">
-          <text class="empty-icon">🔍</text>
-          <text class="empty-text">没有找到相关动态</text>
-        </view>
-      </view>
-
-      <!-- 用户结果 -->
-      <view v-else class="user-list">
-        <view v-for="user in userList" :key="user.userId" class="user-item" @click="goUserHome(user.userId)">
-          <image class="user-avatar" :src="fullImageUrl(user.avatar)" mode="aspectFill" />
-          <view class="user-meta">
-            <text class="user-nickname">{{ user.nickName }}</text>
-            <text class="user-id">ID: {{ user.userId }}</text>
+    <!-- 未搜索：搜索历史 + 热门关键词 -->
+    <view v-if="!hasSearched">
+      <!-- 搜索历史（用户可删除单条 / 清空 / 选择不显示） -->
+      <view class="history-wrap" v-if="historyVisible && historyList.length">
+        <view class="block-head">
+          <text class="block-title">搜索历史</text>
+          <view class="head-actions">
+            <view class="head-action pet-press" @click="hideHistory">
+              <Icon name="eye_off" :size="15" color="#8A8D9A" />
+              <text class="action-text">不显示</text>
+            </view>
+            <view class="head-action pet-press" @click="clearHistory">
+              <Icon name="trash" :size="15" color="#8A8D9A" />
+              <text class="action-text">清空</text>
+            </view>
           </view>
         </view>
-        <view v-if="!userList.length" class="empty-wrap">
-          <text class="empty-icon">🙋</text>
-          <text class="empty-text">没有找到相关用户</text>
+        <view class="history-list">
+          <view
+            class="history-item pet-press"
+            v-for="word in historyList"
+            :key="word"
+            @click="useKeyword(word)"
+          >
+            <text class="history-text">{{ word }}</text>
+            <view class="history-del" @click.stop="deleteHistory(word)">
+              <Icon name="close" :size="12" color="#C0C4CC" />
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 历史已关闭：提供重新开启入口 -->
+      <view class="history-open pet-press" v-else-if="!historyVisible" @click="showHistory">
+        <Icon name="undo" :size="14" color="#FF8C42" />
+        <text class="history-open-text">开启搜索历史</text>
+      </view>
+
+      <!-- 热门关键词 -->
+      <view class="hot-wrap">
+        <text class="hot-title">大家都在搜</text>
+        <view class="hot-list">
+          <view
+            class="hot-item pet-press"
+            v-for="word in hotWords"
+            :key="word"
+            @click="useKeyword(word)"
+          >
+            <text class="hot-text">{{ word }}</text>
+          </view>
         </view>
       </view>
     </view>
 
-    <!-- 热门占位（未搜索时） -->
-    <view v-else class="tips-wrap">
-      <text class="tips-text">输入关键词搜索动态或用户</text>
+    <!-- 搜索中 -->
+    <view class="loading-wrap" v-if="loading">
+      <view class="loading-paw">
+        <Icon name="search" :size="26" color="#FF8C42" />
+      </view>
+      <text class="loading-text">正在搜索...</text>
+    </view>
+
+    <!-- 搜索结果 -->
+    <view class="result-wrap" v-else-if="hasSearched">
+      <view class="result-count" v-if="articleList.length">
+        <text class="count-text">共找到 {{ resultTotal }} 篇相关文章</text>
+      </view>
+
+      <view class="article-list" v-if="articleList.length">
+        <view
+          class="article-card pet-press"
+          v-for="item in articleList"
+          :key="item.id"
+          @click="goDetail(item.id)"
+        >
+          <view class="article-main">
+            <text class="article-title pet-line2">{{ item.title }}</text>
+            <text class="article-summary pet-line2" v-if="item.summary">{{ item.summary }}</text>
+            <view class="article-meta">
+              <text v-if="item.category" class="meta-chip">{{ item.category }}</text>
+              <text class="meta-time">{{ formatDateTime(item.createTime) }}</text>
+            </view>
+          </view>
+          <image
+            v-if="item.coverImage"
+            class="article-thumb"
+            :src="fullImageUrl(item.coverImage)"
+            mode="aspectFill"
+          />
+        </view>
+      </view>
+
+      <!-- 加载更多 / 到底提示 -->
+      <view class="list-foot" v-if="articleList.length">
+        <view class="foot-loading" v-if="loadingMore">
+          <Icon name="reload" :size="15" color="#FF8C42" />
+          <text class="foot-text">正在加载更多...</text>
+        </view>
+        <text class="foot-text foot-end" v-else-if="finished">— 到底啦 —</text>
+      </view>
+
+      <!-- 空结果 -->
+      <view class="empty-wrap" v-else>
+        <view class="empty-art">
+          <Icon name="search" :size="44" color="#FFB07A" />
+        </view>
+        <text class="empty-title">没有找到相关文章</text>
+        <text class="empty-desc">换个关键词试试，比如「疫苗」「换粮」「体重」</text>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import PostCard from '@/components/PostCard.vue';
 import Icon from '@/components/Icon.vue';
-import { getPostList, searchUsers, likePost, deletePost } from '@/api/post.js';
-import { showToast, fullImageUrl } from '@/utils/index.js';
+import { ref } from 'vue';
+import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app';
+import { getArticleList } from '@/api/article.js';
+import { showToast, formatDateTime, fullImageUrl } from '@/utils/index.js';
+import {
+  getSearchHistory,
+  addSearchHistory,
+  removeSearchHistory,
+  clearSearchHistory,
+  isHistoryVisible,
+  setHistoryVisible,
+} from '@/utils/searchHistory.js';
+
+/** 每页条数 */
+const PAGE_SIZE = 10;
 
 const navBarHeight = ref(44);
 // #ifdef MP-WEIXIN
@@ -98,242 +162,506 @@ try {
 } catch (e) {}
 // #endif
 
+const autoFocus = ref(false);
 const keyword = ref('');
 const hasSearched = ref(false);
-const resultTab = ref('post');
-const postList = ref([]);
-const userList = ref([]);
+const loading = ref(false);
+const loadingMore = ref(false);
+const finished = ref(false);
+const articleList = ref([]);
+const resultTotal = ref(0);
+const pageNum = ref(1);
 
+const hotWords = ['疫苗', '换粮', '体重', '驱虫', '新手养猫', '训练'];
+
+/* ==================== 搜索历史 ==================== */
+const historyVisible = ref(true);
+const historyList = ref([]);
+
+/** 读取搜索历史与"是否展示"偏好 */
+const loadHistory = () => {
+  historyVisible.value = isHistoryVisible();
+  // 关闭展示时不读取内容，避免无谓渲染
+  historyList.value = historyVisible.value ? getSearchHistory() : [];
+};
+
+/** 删除单条记录 */
+const deleteHistory = (word) => {
+  historyList.value = removeSearchHistory(word);
+};
+
+/** 清空全部记录 */
+const clearHistory = () => {
+  uni.showModal({
+    title: '提示',
+    content: '确定要清空全部搜索记录吗？',
+    success: (res) => {
+      if (!res.confirm) return;
+      clearSearchHistory();
+      historyList.value = [];
+    },
+  });
+};
+
+/** 选择"不显示"：仅隐藏展示，不删除已有记录 */
+const hideHistory = () => {
+  setHistoryVisible(false);
+  historyVisible.value = false;
+  historyList.value = [];
+  showToast('已关闭搜索历史');
+};
+
+/** 重新开启历史记录展示 */
+const showHistory = () => {
+  setHistoryVisible(true);
+  loadHistory();
+};
+
+/* ==================== 搜索 ==================== */
 const clearKeyword = () => {
   keyword.value = '';
-  postList.value = [];
-  userList.value = [];
+  articleList.value = [];
+  resultTotal.value = 0;
   hasSearched.value = false;
+  finished.value = false;
 };
 
 const onCancel = () => {
   uni.navigateBack();
 };
 
+/** 执行搜索（第一页） */
 const onSearch = async () => {
   const kw = keyword.value.trim();
   if (!kw) {
     showToast('请输入搜索内容');
     return;
   }
+  keyword.value = kw;
+  // 仅在用户开启搜索历史时记录，关闭后不写入本地缓存
+  if (historyVisible.value) {
+    addSearchHistory(kw);
+  }
+
   hasSearched.value = true;
-  // 并行搜索动态和用户
+  loading.value = true;
+  loadingMore.value = false;
+  finished.value = false;
+  pageNum.value = 1;
   try {
-    const [postRes, userRes] = await Promise.allSettled([
-      getPostList({ pageNum: 1, pageSize: 20, keyword: kw }),
-      searchUsers({ keyword: kw, limit: 20 }),
-    ]);
-    if (postRes.status === 'fulfilled') {
-      postList.value = postRes.value.rows || [];
-    }
-    if (userRes.status === 'fulfilled') {
-      userList.value = userRes.value.data || [];
+    const res = await getArticleList({ pageNum: 1, pageSize: PAGE_SIZE, keyword: kw });
+    const rows = res.rows || [];
+    articleList.value = rows;
+    resultTotal.value = res.total || rows.length;
+    // 到底判定以 total 为准：PageHelper 分页合理化会把超界的 pageNum 回退到最后一页，
+    // 返回同一批数据，只看"本页不足一页"永远触发不了到底。
+    const total = Number(res.total);
+    if (Number.isFinite(total) && total > 0) {
+      finished.value = articleList.value.length >= total;
+    } else {
+      finished.value = rows.length < PAGE_SIZE;
     }
   } catch (e) {
-    console.error('搜索失败', e);
+    console.error('[搜索] 获取养宠知识失败:', e?.code || e?.msg || e);
+    articleList.value = [];
+    resultTotal.value = 0;
+    finished.value = true;
+  } finally {
+    loading.value = false;
   }
 };
 
-const handleLike = async (id) => {
+/** 触底加载下一页搜索结果 */
+const loadMore = async () => {
+  if (!hasSearched.value || loading.value || loadingMore.value || finished.value) return;
+  const kw = keyword.value.trim();
+  if (!kw) return;
+
+  loadingMore.value = true;
   try {
-    const res = await likePost(id);
-    const post = postList.value.find((p) => p.id === id);
-    if (post) {
-      const nowLiked = res.liked !== undefined ? res.liked : !post.isLike;
-      post.isLike = nowLiked;
-      post.likeCount = (post.likeCount || 0) + (nowLiked ? 1 : -1);
-      if (post.likeCount < 0) post.likeCount = 0;
+    const nextPage = pageNum.value + 1;
+    const res = await getArticleList({ pageNum: nextPage, pageSize: PAGE_SIZE, keyword: kw });
+    const rows = res.rows || [];
+    if (rows.length) {
+      // 按 id 去重后再追加：后端分页合理化可能把最后一页重复返回，前端再兜一层
+      const existing = new Set(articleList.value.map((item) => item.id));
+      articleList.value = articleList.value.concat(rows.filter((item) => !existing.has(item.id)));
+      pageNum.value = nextPage;
     }
-  } catch (err) {
-    showToast(err?.msg || '操作失败');
+    const total = Number(res.total);
+    if (Number.isFinite(total) && total > 0) {
+      finished.value = articleList.value.length >= total;
+    } else {
+      finished.value = rows.length < PAGE_SIZE;
+    }
+  } catch (e) {
+    console.error('[搜索] 加载更多失败:', e?.code || e?.msg || e);
+    finished.value = true;
+  } finally {
+    loadingMore.value = false;
   }
 };
 
-const handleComment = (id) => uni.navigateTo({ url: `/pages/index/detail?id=${id}` });
-const handlePreview = ({ images, current }) => {
-  uni.previewImage({ urls: images, current: images[current] || images[0] });
-};
-const handleDelete = async (id) => {
-  uni.showModal({
-    title: '提示', content: '确定删除这条动态吗？', confirmColor: '#FF4D4F',
-    success: async (res) => {
-      if (res.confirm) {
-        try {
-          await deletePost(id);
-          postList.value = postList.value.filter((p) => p.id !== id);
-          showToast('已删除', 'success');
-        } catch (err) { showToast(err?.msg || '删除失败'); }
-      }
-    },
-  });
+/** 使用历史记录 / 热门词搜索 */
+const useKeyword = (word) => {
+  keyword.value = word;
+  onSearch();
 };
 
-const goUserHome = (userId) => {
-  uni.navigateTo({ url: `/pages/user/home?userId=${userId}` });
-};
+const goDetail = (id) => uni.navigateTo({ url: `/pages/article/detail?id=${id}` });
+
+onLoad((options = {}) => {
+  // 从首页搜索框进入时自动聚焦
+  autoFocus.value = options.mode === 'article';
+  if (options.keyword) {
+    keyword.value = decodeURIComponent(options.keyword);
+    onSearch();
+  }
+});
+
+// 每次进入（含从文章详情返回）都重新读取历史与展示偏好
+onShow(() => {
+  loadHistory();
+});
+
+onReachBottom(() => {
+  loadMore();
+});
 </script>
 
 <style lang="scss" scoped>
 .search-page {
   min-height: 100vh;
-  background-color: #F8F9FC;
+  background-color: $bg-page;
 }
 
-.search-header {
-  background-color: #fff;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+/* ===== 搜索导航栏 ===== */
+.search-nav {
   position: sticky;
   top: 0;
   z-index: 100;
+  background-color: #fff;
+  box-shadow: 0 2rpx 12rpx rgba(52, 59, 76, 0.05);
 
-  .search-bar {
+  .nav-inner {
     display: flex;
     align-items: center;
-    padding: 16rpx 24rpx;
-    gap: 16rpx;
-    height: 88rpx;
-    box-sizing: border-box;
+    gap: 20rpx;
+    height: 96rpx;
+    padding: 0 28rpx;
   }
 
-  .search-input-wrap {
+  .search-box {
     flex: 1;
     display: flex;
     align-items: center;
-    background-color: #F2F3F5;
-    border-radius: 40rpx;
-    padding: 12rpx 24rpx;
     gap: 12rpx;
-  }
+    height: 72rpx;
+    background-color: $bg-page;
+    border-radius: $radius-round;
+    padding: 0 24rpx;
 
-  .search-input {
-    flex: 1;
-    font-size: 28rpx;
-    color: #1A1A1A;
-  }
+    .search-input {
+      flex: 1;
+      font-size: $font-sm;
+      color: $text-primary;
+      height: 100%;
+    }
 
-  .search-placeholder {
-    color: #B0B0B0;
-    font-size: 28rpx;
-  }
-
-  .clear-btn {
-    width: 36rpx;
-    height: 36rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    .clear-btn {
+      padding: 8rpx;
+      display: flex;
+      align-items: center;
+    }
   }
 
   .cancel-btn {
-    font-size: 28rpx;
-    color: #FF8C42;
+    font-size: $font-md;
+    color: $text-secondary;
     flex-shrink: 0;
   }
 }
 
-.result-wrap {
-  padding-top: 20rpx;
+.input-placeholder {
+  color: $text-placeholder;
+  font-size: $font-sm;
 }
 
-.result-tabs {
+/* ===== 区块标题（历史/热门通用） ===== */
+.block-head {
   display: flex;
-  padding: 0 24rpx 16rpx;
-  background-color: #fff;
-  gap: 40rpx;
+  align-items: center;
+  justify-content: space-between;
 
-  .result-tab {
-    font-size: 30rpx;
-    color: #666;
-    font-weight: 500;
-    padding-bottom: 12rpx;
-    position: relative;
-
-    &.active {
-      color: #1A1A1A;
-      font-weight: 700;
-
-      &::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 40rpx;
-        height: 6rpx;
-        background: linear-gradient(90deg, #FF8C42, #FFB07C);
-        border-radius: 3rpx;
-      }
-    }
+  .block-title {
+    font-size: $font-md;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
   }
-}
 
-.user-list {
-  background-color: #fff;
-  border-radius: 24rpx 24rpx 0 0;
-
-  .user-item {
+  .head-actions {
     display: flex;
     align-items: center;
-    padding: 24rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    gap: 28rpx;
+  }
 
-    &:last-child {
-      border-bottom: none;
-    }
+  .head-action {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
 
-    .user-avatar {
-      width: 88rpx;
-      height: 88rpx;
-      border-radius: 50%;
-      background-color: #F0F0F0;
-      margin-right: 20rpx;
-      flex-shrink: 0;
-    }
-
-    .user-meta {
-      flex: 1;
-      min-width: 0;
-
-      .user-nickname {
-        display: block;
-        font-size: 30rpx;
-        color: #333;
-        font-weight: 600;
-      }
-
-      .user-id {
-        display: block;
-        font-size: 24rpx;
-        color: #999;
-        margin-top: 6rpx;
-      }
+    .action-text {
+      font-size: $font-xs;
+      color: $text-hint;
     }
   }
 }
 
+/* ===== 搜索历史 ===== */
+.history-wrap {
+  padding: 40rpx 32rpx 8rpx;
+
+  .history-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20rpx;
+    margin-top: 28rpx;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    max-width: 100%;
+    padding: 14rpx 20rpx 14rpx 32rpx;
+    border-radius: $radius-round;
+    background-color: #fff;
+    box-shadow: $shadow-sm;
+
+    .history-text {
+      font-size: $font-sm;
+      color: $text-secondary;
+      max-width: 380rpx;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .history-del {
+      width: 32rpx;
+      height: 32rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* 历史被关闭时的开启入口 */
+.history-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  margin: 36rpx 32rpx 0;
+  padding: 14rpx 32rpx;
+  border-radius: $radius-round;
+  background-color: #fff;
+  box-shadow: $shadow-sm;
+
+  .history-open-text {
+    font-size: $font-sm;
+    color: $primary;
+  }
+}
+
+/* ===== 热门关键词 ===== */
+.hot-wrap {
+  padding: 48rpx 32rpx;
+
+  .hot-title {
+    font-size: $font-md;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+  }
+
+  .hot-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20rpx;
+    margin-top: 28rpx;
+  }
+
+  .hot-item {
+    padding: 14rpx 32rpx;
+    border-radius: $radius-round;
+    background-color: #fff;
+    box-shadow: $shadow-sm;
+
+    .hot-text {
+      font-size: $font-sm;
+      color: $text-secondary;
+    }
+  }
+}
+
+/* ===== 加载 ===== */
+.loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 140rpx 0;
+
+  .loading-paw {
+    width: 80rpx;
+    height: 80rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pet-breath 1.6s ease-in-out infinite;
+  }
+
+  .loading-text {
+    margin-top: 22rpx;
+    font-size: $font-sm;
+    color: $text-hint;
+  }
+}
+
+/* ===== 结果 ===== */
+.result-wrap {
+  padding: 24rpx 24rpx 60rpx;
+}
+
+.result-count {
+  padding: 0 8rpx 20rpx;
+
+  .count-text {
+    font-size: $font-xs;
+    color: $text-hint;
+  }
+}
+
+.article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.article-card {
+  display: flex;
+  gap: 22rpx;
+  padding: 24rpx;
+  border-radius: $radius-lg;
+  background-color: #fff;
+  box-shadow: $shadow-card;
+
+  .article-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+
+    .article-title {
+      font-size: $font-md;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      line-height: 1.45;
+    }
+
+    .article-summary {
+      margin-top: 10rpx;
+      font-size: $font-xs;
+      color: $text-secondary;
+      line-height: 1.6;
+    }
+
+    .article-meta {
+      display: flex;
+      align-items: center;
+      gap: 14rpx;
+      margin-top: auto;
+      padding-top: 14rpx;
+
+      .meta-chip {
+        font-size: $font-xs;
+        color: $primary-dark;
+        background: $primary-lighter;
+        padding: 2rpx 14rpx;
+        border-radius: $radius-round;
+      }
+
+      .meta-time {
+        font-size: $font-xs;
+        color: $text-hint;
+      }
+    }
+  }
+
+  .article-thumb {
+    width: 160rpx;
+    height: 120rpx;
+    border-radius: $radius-md;
+    flex-shrink: 0;
+    background-color: $bg-input;
+  }
+}
+
+/* ===== 加载更多 / 到底提示 ===== */
+.list-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36rpx 0 8rpx;
+
+  .foot-loading {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    animation: pet-breath 1.6s ease-in-out infinite;
+  }
+
+  .foot-text {
+    font-size: $font-xs;
+    color: $text-hint;
+  }
+
+  .foot-end {
+    color: $text-placeholder;
+  }
+}
+
+/* ===== 空结果 ===== */
 .empty-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 120rpx 0;
+  padding: 100rpx 72rpx;
 
-  .empty-icon { font-size: 120rpx; margin-bottom: 20rpx; }
-  .empty-text { font-size: 28rpx; color: #B0B0B0; }
-}
+  .empty-art {
+    width: 176rpx;
+    height: 176rpx;
+    border-radius: 50%;
+    background: $gradient-card;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: $shadow-md;
+  }
 
-.tips-wrap {
-  display: flex;
-  justify-content: center;
-  padding-top: 200rpx;
+  .empty-title {
+    margin-top: 32rpx;
+    font-size: $font-md;
+    color: $text-primary;
+    font-weight: $font-weight-bold;
+  }
 
-  .tips-text {
-    font-size: 28rpx;
-    color: #B0B0B0;
+  .empty-desc {
+    margin-top: 12rpx;
+    font-size: $font-sm;
+    color: $text-hint;
+    text-align: center;
+    line-height: 1.6;
   }
 }
 </style>

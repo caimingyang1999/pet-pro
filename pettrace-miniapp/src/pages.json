@@ -15,17 +15,24 @@
       }
     },
     {
-      "path": "pages/index/detail",
+      "path": "pages/article/detail",
       "style": {
-        "navigationBarTitleText": "详情",
-        "navigationBarBackgroundColor": "#FFFFFF"
+        "navigationBarTitleText": "养宠知识",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
       }
     },
     {
-      "path": "pages/index/publish",
+      "path": "pages/article/list",
       "style": {
-        "navigationBarTitleText": "发布动态",
-        "navigationBarBackgroundColor": "#FFFFFF"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "养宠知识",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": true,
+        "backgroundColor": "#F8F9FC",
+        "backgroundTextStyle": "dark",
+        "onReachBottomDistance": 80
       }
     },
     {
@@ -47,9 +54,53 @@
       "path": "pages/pet/list",
       "style": {
         "navigationStyle": "custom",
-        "navigationBarTitleText": "我的宠物",
+        "navigationBarTitleText": "我的爱宠",
         "navigationBarBackgroundColor": "#FF8C42",
         "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/pet/detail",
+      "style": {
+        "navigationBarTitleText": "宠物详情"
+      }
+    },
+    {
+      "path": "pages/pet/edit",
+      "style": {
+        "navigationBarTitleText": "编辑宠物"
+      }
+    },
+    {
+      "path": "pages/pet/weight",
+      "style": {
+        "navigationBarTitleText": "体重记录",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/pet/health",
+      "style": {
+        "navigationBarTitleText": "健康记录",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/pet/album",
+      "style": {
+        "navigationBarTitleText": "成长相册",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/pet/album-edit",
+      "style": {
+        "navigationBarTitleText": "添加记录",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
       }
     },
     {
@@ -67,18 +118,6 @@
         "navigationBarTitleText": "问答记录",
         "navigationBarBackgroundColor": "#FFFFFF",
         "navigationBarTextStyle": "black"
-      }
-    },
-    {
-      "path": "pages/pet/detail",
-      "style": {
-        "navigationBarTitleText": "宠物详情"
-      }
-    },
-    {
-      "path": "pages/pet/edit",
-      "style": {
-        "navigationBarTitleText": "编辑宠物"
       }
     },
     {
@@ -102,15 +141,6 @@
         "navigationBarTitleText": "我的",
         "navigationBarBackgroundColor": "#F8F9FC",
         "navigationBarTextStyle": "black"
-      }
-    },
-    {
-      "path": "pages/mine/posts",
-      "style": {
-        "navigationBarTitleText": "我的动态",
-        "enablePullDownRefresh": true,
-        "backgroundColor": "#F8F9FC",
-        "backgroundTextStyle": "dark"
       }
     },
     {
@@ -153,31 +183,18 @@
       }
     },
     {
+      "path": "pages/common/agreement",
+      "style": {
+        "navigationBarTitleText": "用户协议",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
       "path": "pages/search/index",
       "style": {
         "navigationStyle": "custom",
         "navigationBarTitleText": "搜索",
-        "navigationBarBackgroundColor": "#FFFFFF"
-      }
-    },
-    {
-      "path": "pages/mine/follows",
-      "style": {
-        "navigationBarTitleText": "我的关注"
-      }
-    },
-    {
-      "path": "pages/mine/likes",
-      "style": {
-        "navigationBarTitleText": "我的点赞",
-        "enablePullDownRefresh": true,
-        "backgroundColor": "#F8F9FC"
-      }
-    },
-    {
-      "path": "pages/user/home",
-      "style": {
-        "navigationBarTitleText": "用户主页",
         "navigationBarBackgroundColor": "#FFFFFF"
       }
     }
@@ -210,10 +227,10 @@
         "text": "商城"
       },
       {
-        "pagePath": "pages/chat/index",
-        "iconPath": "static/tabbar/chat.png",
-        "selectedIconPath": "static/tabbar/chat-active.png",
-        "text": "养宠助手"
+        "pagePath": "pages/pet/list",
+        "iconPath": "static/tabbar/pet.png",
+        "selectedIconPath": "static/tabbar/pet-active.png",
+        "text": "爱宠"
       },
       {
         "pagePath": "pages/mine/index",

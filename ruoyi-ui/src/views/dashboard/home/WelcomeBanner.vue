@@ -13,9 +13,6 @@
         <span>{{ currentDate }}</span>
         <span class="weekday">{{ weekday }}</span>
       </div>
-      <el-button type="primary" icon="el-icon-download" class="export-btn" @click="handleExport">
-        数据导出
-      </el-button>
     </div>
   </div>
 </template>
@@ -40,11 +37,6 @@ export default {
     weekday() {
       const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
       return days[new Date().getDay()]
-    }
-  },
-  methods: {
-    handleExport() {
-      this.$message.success('数据导出功能开发中...')
     }
   }
 }
@@ -101,12 +93,6 @@ export default {
       .weekday {
         color: #9ca3af;
       }
-    }
-
-    .export-btn {
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-weight: 500;
     }
   }
 }

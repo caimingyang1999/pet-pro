@@ -1,7 +1,7 @@
 <template>
   <view class="page-container">
     <!-- 编辑模式加载 -->
-    <LoadingState v-if="loading" mode="skeleton" type="post" :count="2" />
+    <LoadingState v-if="loading" mode="skeleton" type="list" :count="2" />
 
     <template v-else>
       <view class="form-card">

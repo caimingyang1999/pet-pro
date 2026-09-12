@@ -6,51 +6,23 @@ import { fetchFeatures } from '@/config/features.js';
 onLaunch(() => {
   console.log('App Launch');
   const userStore = useUserStore();
+  // 恢复本地缓存的登录态（未登录时保持游客身份，不做任何强制跳转）
   userStore.initUserInfo();
   // 拉取远程功能开关（静默失败，不影响启动；结果全局缓存复用）
   fetchFeatures();
-  // 检查登录状态，未登录则跳转登录页
-  checkLoginAndRedirect();
 });
 
 onShow(() => {
   console.log('App Show');
-  // 每次回到前台也检查一次
-  checkLoginAndRedirect();
 });
 
 onHide(() => {
   console.log('App Hide');
 });
-
-/**
- * 检查登录状态，如果未登录则跳转到全屏登录页（非 tabbar）
- */
-const checkLoginAndRedirect = () => {
-  const token = uni.getStorageSync('token');
-  if (!token) {
-    // 延迟跳转，避免与页面初始化冲突
-    setTimeout(() => {
-      const pages = getCurrentPages();
-      if (pages.length === 0) return;
-      const currentRoute = pages[pages.length - 1]?.route;
-      // 如果已经在登录/注册页面，不再跳转
-      if (
-        currentRoute === 'pages/login/index' ||
-        currentRoute === 'pages/login/register'
-      ) {
-        return;
-      }
-      // reLaunch 到全屏登录页，清空页面栈，不显示 tabbar
-      uni.reLaunch({ url: '/pages/login/index' });
-    }, 200);
-  }
-};
 </script>
 
 <style lang="scss">
 @import "uview-plus/index.scss";
-@import "@/static/iconfont/iconfont.scss";
 
 page {
   background-color: $bg-page;
@@ -104,12 +76,6 @@ button {
   }
 }
 
-.iconfont {
-  font-family: "iconfont", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  font-style: normal;
-  line-height: 1;
-}
-
 /* ============================================================
  *  全局通用工具类（跨页面复用，避免重复声明）
  * ============================================================ */
@@ -142,14 +108,14 @@ button {
  *  全局关键帧动画（pet- 前缀避免与组件库冲突）
  * ============================================================ */
 
-/* 发布按钮脉冲光圈 */
+/* 悬浮按钮脉冲光圈 */
 @keyframes pet-pulse {
   0% { box-shadow: 0 0 0 0 rgba(255, 140, 66, 0.42); }
   70% { box-shadow: 0 0 0 24rpx rgba(255, 140, 66, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 140, 66, 0); }
 }
 
-/* 弹跳动画（点赞 / 积分 / 标签） */
+/* 弹跳动画（积分 / 标签 / 图标） */
 @keyframes pet-bounce {
   0% { transform: scale(1); }
   30% { transform: scale(1.32); }

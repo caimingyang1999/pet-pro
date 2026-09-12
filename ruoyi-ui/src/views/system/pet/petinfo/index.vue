@@ -1,9 +1,9 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="宠物名称" prop="petName">
+      <el-form-item label="宠物名称" prop="name">
         <el-input
-          v-model="queryParams.petName"
+          v-model="queryParams.name"
           placeholder="请输入宠物名称"
           clearable
           style="width: 200px"
@@ -13,19 +13,29 @@
       <el-form-item label="所属用户" prop="userKeyword">
         <el-input
           v-model="queryParams.userKeyword"
-          placeholder="用户名/手机号"
+          placeholder="昵称/账号/手机号"
           clearable
           style="width: 200px"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="品种" prop="categoryId">
-        <el-select v-model="queryParams.categoryId" placeholder="请选择品种" clearable style="width: 180px">
+      <el-form-item label="品种" prop="breed">
+        <el-select v-model="queryParams.breed" placeholder="请选择品种" clearable filterable style="width: 180px">
           <el-option
-            v-for="item in categoryOptions"
-            :key="item.id"
-            :label="item.name"
-            :value="item.id"
+            v-for="item in breedOptions"
+            :key="item"
+            :label="item"
+            :value="item"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="宠物类型" prop="petType">
+        <el-select v-model="queryParams.petType" placeholder="请选择" clearable style="width: 140px">
+          <el-option
+            v-for="item in petTypeOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
           />
         </el-select>
       </el-form-item>
@@ -46,9 +56,10 @@
           <el-image
             v-if="scope.row.avatar"
             class="pet-avatar"
-            :src="scope.row.avatar"
-            :preview-src-list="[scope.row.avatar]"
+            :src="formatImageUrl(scope.row.avatar)"
+            :preview-src-list="[formatImageUrl(scope.row.avatar)]"
             fit="cover"
+            :z-index="9999"
           >
             <div slot="error" class="avatar-fallback">
               <i class="el-icon-picture-outline"></i>
@@ -60,11 +71,20 @@
         </template>
       </el-table-column>
       <el-table-column label="宠物名称" align="left" prop="name" min-width="120" :show-overflow-tooltip="true" />
-      <el-table-column label="品种" align="center" prop="categoryName" width="100" :show-overflow-tooltip="true" />
+      <el-table-column label="品种" align="center" prop="breed" width="100" :show-overflow-tooltip="true">
+        <template slot-scope="scope">
+          <span>{{ scope.row.breed || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="宠物类型" align="center" width="100">
+        <template slot-scope="scope">
+          <el-tag size="mini" effect="plain">{{ petTypeLabel(scope.row.petType) }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="性别" align="center" width="70">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.gender === '1'" type="primary" size="mini">公</el-tag>
-          <el-tag v-else-if="scope.row.gender === '2'" type="danger" size="mini" effect="plain">母</el-tag>
+          <el-tag v-else-if="scope.row.gender === '0'" type="danger" size="mini" effect="plain">母</el-tag>
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -79,7 +99,11 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="所属用户" align="center" prop="userNickName" width="100" :show-overflow-tooltip="true" />
+      <el-table-column label="所属用户" align="center" prop="userName" width="100" :show-overflow-tooltip="true">
+        <template slot-scope="scope">
+          <span>{{ scope.row.userName || '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="疫苗记录数" align="center" prop="vaccineCount" width="100">
         <template slot-scope="scope">
           <span>{{ scope.row.vaccineCount || 0 }}</span>
@@ -124,9 +148,10 @@
           <el-image
             v-if="petDetail.avatar"
             class="detail-avatar"
-            :src="petDetail.avatar"
-            :preview-src-list="[petDetail.avatar]"
+            :src="formatImageUrl(petDetail.avatar)"
+            :preview-src-list="[formatImageUrl(petDetail.avatar)]"
             fit="cover"
+            :z-index="9999"
           >
             <div slot="error" class="detail-avatar-fallback">
               <i class="el-icon-picture-outline"></i>
@@ -139,10 +164,11 @@
         </div>
 
         <el-descriptions :column="2" border class="detail-descriptions">
-          <el-descriptions-item label="品种">{{ petDetail.categoryName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="品种">{{ petDetail.breed || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="宠物类型">{{ petTypeLabel(petDetail.petType) }}</el-descriptions-item>
           <el-descriptions-item label="性别">
             <el-tag v-if="petDetail.gender === '1'" type="primary" size="small">公</el-tag>
-            <el-tag v-else-if="petDetail.gender === '2'" type="danger" size="small" effect="plain">母</el-tag>
+            <el-tag v-else-if="petDetail.gender === '0'" type="danger" size="small" effect="plain">母</el-tag>
             <span v-else>-</span>
           </el-descriptions-item>
           <el-descriptions-item label="出生日期">{{ petDetail.birthday || '-' }}</el-descriptions-item>
@@ -153,11 +179,11 @@
           </el-descriptions-item>
           <el-descriptions-item label="毛色">{{ petDetail.color || '-' }}</el-descriptions-item>
           <el-descriptions-item label="绝育状态">
-            <el-tag v-if="petDetail.sterilized === '1'" type="success" size="small">已绝育</el-tag>
-            <el-tag v-else-if="petDetail.sterilized === '0'" type="info" size="small">未绝育</el-tag>
+            <el-tag v-if="petDetail.sterilization === '1'" type="success" size="small">已绝育</el-tag>
+            <el-tag v-else-if="petDetail.sterilization === '0'" type="info" size="small">未绝育</el-tag>
             <span v-else>-</span>
           </el-descriptions-item>
-          <el-descriptions-item label="所属用户">{{ petDetail.userNickName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="所属用户">{{ petDetail.userName || '-' }}</el-descriptions-item>
         </el-descriptions>
 
         <div class="detail-section">
@@ -165,7 +191,7 @@
           <el-table :data="petDetail.vaccineList || []" size="small" border>
             <el-table-column label="序号" type="index" width="50" align="center" />
             <el-table-column label="疫苗名称" prop="vaccineName" align="center" />
-            <el-table-column label="接种日期" prop="vaccineDate" align="center" width="120" />
+            <el-table-column label="接种日期" prop="inoculationDate" align="center" width="120" />
             <el-table-column label="下次接种日期" prop="nextDate" align="center" width="130" />
           </el-table>
           <el-empty v-if="!petDetail.vaccineList || petDetail.vaccineList.length === 0" description="暂无疫苗记录" :image-size="60" />
@@ -184,8 +210,7 @@
 </template>
 
 <script>
-import { getPetList, getPetDetail, deletePet } from "@/api/system/pet/petinfo";
-import { getCategoryList } from "@/api/system/pet/category";
+import { getPetList, getPetDetail, deletePet, getBreedOptions } from "@/api/system/pet/petinfo";
 
 export default {
   name: "PetInfo",
@@ -196,21 +221,28 @@ export default {
       showSearch: true,
       total: 0,
       petList: [],
-      categoryOptions: [],
+      breedOptions: [],
+      // 宠物类型选项（与 pet_info.pet_type 取值一致）
+      petTypeOptions: [
+        { value: "cat", label: "猫" },
+        { value: "dog", label: "狗" },
+        { value: "other", label: "其他" }
+      ],
       detailOpen: false,
       petDetail: {},
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        petName: undefined,
+        name: undefined,
         userKeyword: undefined,
-        categoryId: undefined
+        breed: undefined,
+        petType: undefined
       }
     };
   },
   created() {
     this.getList();
-    this.getCategoryOptions();
+    this.loadBreedOptions();
   },
   methods: {
     getList() {
@@ -218,35 +250,44 @@ export default {
       const params = {
         pageNum: this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize,
-        keyword: this.queryParams.petName,
+        name: this.queryParams.name,
         userKeyword: this.queryParams.userKeyword,
-        categoryId: this.queryParams.categoryId
+        breed: this.queryParams.breed,
+        petType: this.queryParams.petType
       };
       getPetList(params).then(response => {
-        this.petList = response.rows || response.data?.list || [];
-        this.total = response.total || response.data?.total || 0;
+        this.petList = response.rows || [];
+        this.total = response.total || 0;
         this.loading = false;
       }).catch(() => {
         this.loading = false;
       });
     },
-    getCategoryOptions() {
-      getCategoryList().then(response => {
-        this.categoryOptions = this.flattenCategories(response.data || []);
+    loadBreedOptions() {
+      getBreedOptions().then(response => {
+        this.breedOptions = response.data || [];
       }).catch(() => {});
     },
-    flattenCategories(list) {
-      const result = [];
-      const traverse = (items) => {
-        items.forEach(item => {
-          result.push({ id: item.id, name: item.name });
-          if (item.children && item.children.length) {
-            traverse(item.children);
-          }
-        });
-      };
-      traverse(list);
-      return result;
+    /** 宠物类型文案（空值按"其他"展示，与后端 NULL 视为其他一致） */
+    petTypeLabel(petType) {
+      const map = { cat: "猫", dog: "狗", other: "其他" };
+      return map[petType] || "其他";
+    },
+    /**
+     * 拼接图片地址：
+     * 历史数据存的是带旧局域网 IP 的绝对地址（http://192.168.1.3:8080/profile/...），
+     * 新数据存 /profile/... 相对路径，两种都要按 /profile 截断后用当前接口前缀重新拼接，
+     * 否则头像会指向不可访问的地址而显示为裂图。
+     */
+    formatImageUrl(url) {
+      if (!url) return "";
+      if (/^(data:|blob:)/i.test(url)) return url;
+      const idx = url.indexOf("/profile");
+      if (idx !== -1) {
+        return process.env.VUE_APP_BASE_API + url.substring(idx);
+      }
+      if (/^https?:\/\//i.test(url)) return url;
+      return process.env.VUE_APP_BASE_API + (url.startsWith("/") ? url : "/" + url);
     },
     calculateAge(birthday) {
       if (!birthday) return '-';
